@@ -1,13 +1,14 @@
 package org.mustangproject;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+
 import org.mustangproject.ZUGFeRD.IReferencedDocument;
 import org.mustangproject.ZUGFeRD.IZUGFeRDAllowanceCharge;
 import org.mustangproject.ZUGFeRD.IZUGFeRDExportableItem;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /***
  * describes any invoice line
@@ -16,6 +17,7 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Item implements IZUGFeRDExportableItem {
 	protected BigDecimal price, quantity, tax, grossPrice, lineTotalAmount;
+	protected BigDecimal basisQuantity = BigDecimal.ONE;
 	protected Date detailedDeliveryPeriodFrom=null, detailedDeliveryPeriodTo=null;
 	protected String id;
 	protected String referencedLineID=null;
@@ -126,6 +128,16 @@ public class Item implements IZUGFeRDExportableItem {
 
 	public Item setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
+		return this;
+	}
+
+	@Override
+	public BigDecimal getBasisQuantity() {
+		return basisQuantity;
+	}
+
+	public Item setBasisQuantity(BigDecimal basisQuantity) {
+		this.basisQuantity = basisQuantity;
 		return this;
 	}
 

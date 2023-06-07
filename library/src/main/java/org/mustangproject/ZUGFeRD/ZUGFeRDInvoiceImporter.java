@@ -191,6 +191,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			for (int i = 0; i < nodes.getLength(); i++) {
 
 				String price = "0";
+				String baseQuantity = "";
 				String name = "";
 				String description = "";
 				SchemedID gid = null;
@@ -248,7 +249,10 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									if ((netChilds.item(netIndex).getLocalName() != null)
 											&& (netChilds.item(netIndex).getLocalName().equals("ChargeAmount"))) {
 										price = netChilds.item(netIndex).getTextContent();// ChargeAmount
-
+									}
+									if ((netChilds.item(netIndex).getLocalName() != null)
+											&& (netChilds.item(netIndex).getLocalName().equals("BasisQuantity"))) {
+										baseQuantity = netChilds.item(netIndex).getTextContent();// BasisQuantity
 									}
 								}
 							}
@@ -341,6 +345,8 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 					p.addGlobalID(gid);
 				}
 				Item it = new Item(p, prc, qty);
+				if (baseQuantity != null && !baseQuantity.isEmpty())
+					it.setBasisQuantity(new BigDecimal(baseQuantity.trim()));
 				if (rdocs != null) {
 					for (ReferencedDocument rdoc : rdocs) {
 						it.addReferencedDocument(rdoc);
@@ -415,6 +421,44 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 					zpp.addAllowance(a);
 				}
 
+			}
+
+			xpr = xpath.compile("//*[local-name()=\"SpecifiedLogisticsServiceCharge\"]");
+			NodeList logServiceNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
+			for (int i = 0; i < logServiceNodes.getLength(); i++) {
+				NodeList chargeNodeChilds = logServiceNodes.item(i).getChildNodes();
+				String chargeAmount = null;
+				String description = null;
+				String taxPercent = null;
+				for (int chargeChildIndex = 0; chargeChildIndex < chargeNodeChilds.getLength(); chargeChildIndex++) {
+					String chargeChildName = chargeNodeChilds.item(chargeChildIndex).getLocalName();
+					if (chargeChildName != null) {
+
+						if (chargeChildName.equals("AppliedAmount")) {
+							chargeAmount = chargeNodeChilds.item(chargeChildIndex).getTextContent();
+						} else if (chargeChildName.equals("Description")) {
+							description = chargeNodeChilds.item(chargeChildIndex).getTextContent();
+						} else if (chargeChildName.equals("AppliedTradeTax")) {
+							NodeList taxChilds = chargeNodeChilds.item(chargeChildIndex).getChildNodes();
+							for (int taxChildIndex = 0; taxChildIndex < taxChilds.getLength(); taxChildIndex++) {
+								String taxItemName = taxChilds.item(taxChildIndex).getLocalName();
+								if ((taxItemName != null) && taxItemName.equals("ApplicablePercent")) {
+									taxPercent = taxChilds.item(taxChildIndex).getTextContent();
+								}
+							}
+						}
+					}
+				}
+				if (chargeAmount != null) {
+					Charge c = new Charge(new BigDecimal(chargeAmount));
+					if (description != null) {
+						c.setReason(description);
+					}
+					if (taxPercent != null) {
+						c.setTaxPercent(new BigDecimal(taxPercent));
+					}
+					zpp.addZFLogisticsServiceCharge(c);
+				}
 			}
 
 			TransactionCalculator tc = new TransactionCalculator(zpp);

@@ -59,7 +59,8 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 	 */
 	protected BigDecimal getChargesForPercent(BigDecimal percent) {
 		IZUGFeRDAllowanceCharge[] charges = trans.getZFCharges();
-		return sumAllowanceCharge(percent, charges);
+		IZUGFeRDAllowanceCharge[] logisticCharges = trans.getZFLogisticsServiceCharges();
+		return sumAllowanceCharge(percent, charges).add(sumAllowanceCharge(percent, logisticCharges));
 	}
 
 	private BigDecimal sumAllowanceCharge(BigDecimal percent, IZUGFeRDAllowanceCharge[] charges) {
@@ -83,7 +84,10 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 	 */
 	protected String getChargeReasonForPercent(BigDecimal percent) {
 		IZUGFeRDAllowanceCharge[] charges = trans.getZFCharges();
+		IZUGFeRDAllowanceCharge[] logisticCharges = trans.getZFLogisticsServiceCharges();
 		String res = getAllowanceChargeReasonForPercent(percent, charges);
+		if ("".equals(res))
+			res = getAllowanceChargeReasonForPercent(percent, logisticCharges);
 		if ("".equals(res)) {
 			res = "Charges";
 		}
@@ -191,12 +195,31 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 								currentCharge.getCategoryCode() != null ? currentCharge.getCategoryCode() : "S");
 					}
 					theAmount.setBasis(theAmount.getBasis().add(currentCharge.getTotalAmount(this)));
-					BigDecimal factor = taxPercent.divide(new BigDecimal(100));
+					BigDecimal factor = taxPercent.divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP);
 					theAmount.setCalculated(theAmount.getBasis().multiply(factor));
 					hm.put(taxPercent.stripTrailingZeros(), theAmount);
 				}
 			}
 		}
+
+		charges = trans.getZFLogisticsServiceCharges();
+		if ((charges != null) && (charges.length > 0)) {
+			for (IZUGFeRDAllowanceCharge currentCharge : charges) {
+				BigDecimal taxPercent = currentCharge.getTaxPercent();
+				if (taxPercent != null) {
+					VATAmount theAmount = hm.get(taxPercent.stripTrailingZeros());
+					if (theAmount == null) {
+						theAmount = new VATAmount(BigDecimal.ZERO, BigDecimal.ZERO,
+								currentCharge.getCategoryCode() != null ? currentCharge.getCategoryCode() : "S");
+					}
+					theAmount.setBasis(theAmount.getBasis().add(currentCharge.getTotalAmount(this)));
+					BigDecimal factor = taxPercent.divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP);
+					theAmount.setCalculated(theAmount.getBasis().multiply(factor));
+					hm.put(taxPercent.stripTrailingZeros(), theAmount);
+				}
+			}
+		}
+
 		IZUGFeRDAllowanceCharge[] allowances = trans.getZFAllowances();
 		if ((allowances != null) && (allowances.length > 0)) {
 			for (IZUGFeRDAllowanceCharge currentAllowance : allowances) {
@@ -208,7 +231,7 @@ public class TransactionCalculator implements IAbsoluteValueProvider {
 								currentAllowance.getCategoryCode() != null ? currentAllowance.getCategoryCode() : "S");
 					}
 					theAmount.setBasis(theAmount.getBasis().subtract(currentAllowance.getTotalAmount(this)));
-					BigDecimal factor = taxPercent.divide(new BigDecimal(100));
+					BigDecimal factor = taxPercent.divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP);
 					theAmount.setCalculated(theAmount.getBasis().multiply(factor));
 
 					hm.put(taxPercent.stripTrailingZeros(), theAmount);

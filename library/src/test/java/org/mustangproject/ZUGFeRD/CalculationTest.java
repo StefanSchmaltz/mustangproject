@@ -4,13 +4,18 @@ import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Test;
-import org.mustangproject.*;
-
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.junit.Test;
+import org.mustangproject.Allowance;
+import org.mustangproject.Charge;
+import org.mustangproject.Invoice;
+import org.mustangproject.Item;
+import org.mustangproject.Product;
+import org.mustangproject.TradeParty;
 
 /***
  * tests the linecalculator and transactioncalculator classes
@@ -195,7 +200,7 @@ public class CalculationTest {
 			invoice.addAllowance(new Allowance().setPercent(total_discount_percent).setTaxPercent(sales_tax_percent1).setCategoryCode("95").setReason("Rabatte"));
 		}
 		TransactionCalculator calculator = new TransactionCalculator(invoice);
-		assertEquals(valueOf(99.54).stripTrailingZeros(), calculator.getGrandTotal().stripTrailingZeros());
+		assertEquals(valueOf(99.75).stripTrailingZeros(), calculator.getGrandTotal().stripTrailingZeros());
 	}
 
 

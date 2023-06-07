@@ -537,6 +537,9 @@ public class Invoice implements IExportableTransaction {
     }
 	}
 
+	public void addZFLogisticsServiceCharge(Charge charge) {
+		LogisticsServiceCharges.add(charge);
+	}
 
 	@Override
 	public IZUGFeRDTradeSettlement[] getTradeSettlement() {

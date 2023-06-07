@@ -893,6 +893,7 @@ public class ZUGFeRDImporter {
 									final Node unitCodeAttribute = node.getAttributes().getNamedItem("unitCode");
 									if (unitCodeAttribute != null) {
 										lineItem.getProduct().setUnit(unitCodeAttribute.getNodeValue());
+										lineItem.setBasisQuantity(tryBigDecimal(getNodeValue(node)));
 									}
 								}
 							}
@@ -901,6 +902,8 @@ public class ZUGFeRDImporter {
 							if (node != null) {
 								node = getNodeByName(node.getChildNodes(), "ChargeAmount");
 								lineItem.setGrossPrice(tryBigDecimal(getNodeValue(node)));
+								node = getNodeByName(node.getChildNodes(), "BasisQuantity");
+								lineItem.setBasisQuantity(tryBigDecimal(getNodeValue(node)));
 							}
 							break;
 
