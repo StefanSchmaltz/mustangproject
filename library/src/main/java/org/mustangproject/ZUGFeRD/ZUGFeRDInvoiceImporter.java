@@ -73,7 +73,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 		xpr = xpath.compile("//*[local-name()=\"BuyerTradeParty\"]");
 		NodeList BuyerNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
-		xpr = xpath.compile("//*[local-name()=\"ExchangedDocument\"]");
+		xpr = xpath.compile("//*[local-name()=\"ExchangedDocument\"]|//*[local-name()=\"HeaderExchangedDocument\"]");
 		NodeList ExchangedDocumentNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
 		xpr = xpath.compile("//*[local-name()=\"GrandTotalAmount\"]");
@@ -147,7 +147,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			}
 		}
 
-		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeSettlement\"]");
+		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeSettlement\"]|//*[local-name()=\"ApplicableSupplyChainTradeSettlement\"]");
 		NodeList headerTradeSettlementNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
 		for (int i = 0; i < headerTradeSettlementNodes.getLength(); i++) {
@@ -183,6 +183,17 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 				.setSender(new TradeParty(SellerNodes)).setRecipient(new TradeParty(BuyerNodes)).setNumber(number);
 //.addItem(new Item(new Product("Testprodukt","","C62",BigDecimal.ZERO),amount,new BigDecimal(1.0)))
 		zpp.setOwnOrganisationName(extractString("//*[local-name()=\"SellerTradeParty\"]/*[local-name()=\"Name\"]"));
+
+		xpr = xpath.compile("//*[local-name()=\"BuyerReference\"]");
+		String buyerReference = null;
+		totalNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
+		if (totalNodes.getLength() > 0) {
+			buyerReference = totalNodes.item(0).getTextContent();
+		}
+		if (buyerReference!=null) {
+			zpp.setReferenceNumber(buyerReference);
+		}
+
 		xpr = xpath.compile("//*[local-name()=\"IncludedSupplyChainTradeLineItem\"]");
 		NodeList nodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
@@ -463,9 +474,6 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 			TransactionCalculator tc = new TransactionCalculator(zpp);
 			String expectedStringTotalGross = tc.getGrandTotal().toPlainString();
-			zpp.setGrandTotalAmount(tc.getGrandTotal());
-			zpp.setTotalPrepaidAmount(tc.getTotalPrepaid());
-			zpp.setDuePayableAmount(tc.getGrandTotal().add(tc.getTotalPrepaid().negate()));
 			EStandard whichType;
 			try {
 				whichType = getStandard();

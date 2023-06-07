@@ -1,3 +1,54 @@
+- support multiple languages in visualization
+- support UBL input in visualization
+- resolve codelists in visualization
+
+2.6.2 "Happy Easter"
+=======
+2023-04-06
+
+- corrected linux build, fixes Github action
+- Issue 308: (be able to) define when VAT collection become applicable #309
+- upgraded CEN schematron to v1.3.9
+- remove logback.xml in some cases PR #311
+- upgrade XRechnung to 2.3 both in default creation+validator
+
+
+2.6.1
+=======
+2023-02-13
+
+- return error code not only on validation but also on recursive directory validation
+- allow Bank credentials without BIC
+- allow minimum profile without delivery date
+- allow prepaid amount in invoice class
+- toolchain.xml now only required on `mvn release:release` not already on `mvn package`
+- upgraded dependencies jackson-databind from 2.13.4.1 to 2.14.2 and xmlunit-assertj from 2.9.0 to 2.9.1
+
+2.6.0 "Joyeux Noël"
+=======
+2022-12-23
+
+- Allow foreign (e.g., french) trade parties whose addresses only consist of the country
+- Allow invoices in minimum profile e.g. hide applicabletradetax, linetotalamount, paymentreference etc in Minimum profile
+- due date and delivery date no longer mandatory for credit notes
+- invoiceimporter to parse BuyerReference
+- support LineThree in TradeParty (BT-165?)
+- Corrected forgotten --d CLI shortcut
+- No uber jar #297
+- automated server tests 
+- prevent nullpointerexception https://github.com/ZUGFeRD/mustangproject/pull/302  thanks to weclapp-dev
+- lines no longer included in basic-wl and minimum
+
+2.5.7
+=======
+2022-11-07
+
+- Import of ZF1 invoices (thanks to Stefan Schmaltz https://github.com/ZUGFeRD/mustangproject/pull/292)
+- works again in Java 1.8 (#286)
+- updated Jackson https://github.com/ZUGFeRD/mustangproject/pull/293
+- now also running EN16931 checks on Basic, which apparently is also a CIUS 
+- Add getter methods to ZUGFeRDImporter #295
+
 2.5.6
 =======
 2022-09-22

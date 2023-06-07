@@ -44,9 +44,6 @@ public class Invoice implements IExportableTransaction {
 
 	protected String documentName = null, documentCode = null, number = null, ownOrganisationFullPlaintextInfo = null, referenceNumber = null, shipToOrganisationID = null, shipToOrganisationName = null, shipToStreet = null, shipToZIP = null, shipToLocation = null, shipToCountry = null, buyerOrderReferencedDocumentID = null, invoiceReferencedDocumentID = null, buyerOrderReferencedDocumentIssueDateTime = null, ownForeignOrganisationID = null, ownOrganisationName = null, currency = null, paymentTermDescription = null;
 	protected Date issueDate = null, dueDate = null, deliveryDate = null;
-	protected BigDecimal totalPrepaidAmount = null;
-	protected BigDecimal grandTotalAmount = null;
-	protected BigDecimal duePayableAmount = null;
 	protected TradeParty sender = null, recipient = null, deliveryAddress = null;
 	@JsonDeserialize(contentAs=Item.class)
 	protected ArrayList<IZUGFeRDExportableItem> ZFItems = null;
@@ -55,6 +52,7 @@ public class Invoice implements IExportableTransaction {
 	protected String contractReferencedDocument = null;
 	protected ArrayList<FileAttachment> xmlEmbeddedFiles=null;
 
+	protected BigDecimal totalPrepaidAmount = null;
 	protected Date detailedDeliveryDateStart = null;
 	protected Date detailedDeliveryPeriodEnd = null;
 
@@ -65,6 +63,7 @@ public class Invoice implements IExportableTransaction {
 	protected String specifiedProcuringProjectID = null;
 	protected String specifiedProcuringProjectName = null;
 	protected String despatchAdviceReferencedDocumentID = null;
+	protected String vatDueDateTypeCode = null;
 
 	public Invoice() {
 		ZFItems = new ArrayList<>();
@@ -276,6 +275,22 @@ public class Invoice implements IExportableTransaction {
 		return buyerOrderReferencedDocumentIssueDateTime;
 	}
 
+
+	/***
+	 * allow to set a amount which has already been paid
+	 * @param prepaid null is possible to omit
+	 * @return fluent setter
+	 */
+	public Invoice setTotalPrepaidAmount(BigDecimal prepaid) {
+		totalPrepaidAmount=prepaid;
+		return this;
+	}
+
+	@Override
+	public BigDecimal getTotalPrepaidAmount() {
+		return totalPrepaidAmount;
+	}
+
 	/***
 	 * when the order (or whatever reference in BuyerOrderReferencedDocumentID) was issued (@todo switch to date?)
 	 * @param buyerOrderReferencedDocumentIssueDateTime  IssueDateTime in format CCYY-MM-DDTHH:MM:SS
@@ -428,34 +443,6 @@ public class Invoice implements IExportableTransaction {
 
 	public Invoice setDeliveryDate(Date deliveryDate) {
 		this.deliveryDate = deliveryDate;
-		return this;
-	}
-
-	@Override
-	public BigDecimal getTotalPrepaidAmount() {
-		return totalPrepaidAmount;
-	}
-
-	public Invoice setTotalPrepaidAmount(BigDecimal totalPrepaidAmount) {
-		this.totalPrepaidAmount = totalPrepaidAmount;
-		return this;
-	}
-
-	public BigDecimal getGrandTotalAmount() {
-		return grandTotalAmount;
-	}
-
-	public Invoice setGrandTotalAmount(BigDecimal grandTotalAmount) {
-		this.grandTotalAmount = grandTotalAmount;
-		return this;
-	}
-
-	public BigDecimal getDuePayableAmount() {
-		return duePayableAmount;
-	}
-
-	public Invoice setDuePayableAmount(BigDecimal duePayableAmount) {
-		this.duePayableAmount = duePayableAmount;
 		return this;
 	}
 
@@ -717,6 +704,20 @@ public class Invoice implements IExportableTransaction {
 
 	public Invoice setSpecifiedProcuringProjectName(String specifiedProcuringProjectName) {
 		this.specifiedProcuringProjectName = specifiedProcuringProjectName;
+		return this;
+	}
+
+	@Override
+	public String getVATDueDateTypeCode() {
+		return vatDueDateTypeCode;
+	}
+
+	/**
+	 * Decide when the VAT should be collected.
+	 * @param vatDueDateTypeCode use EventTimeCodeTypeConstants
+	 */
+	public Invoice setVATDueDateTypeCode(String vatDueDateTypeCode) {
+		this.vatDueDateTypeCode = vatDueDateTypeCode;
 		return this;
 	}
 
