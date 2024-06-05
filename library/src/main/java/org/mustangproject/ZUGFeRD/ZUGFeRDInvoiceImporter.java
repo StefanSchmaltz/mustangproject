@@ -54,7 +54,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 	/***
 	 * This will parse a XML into a invoice object
-	 * 
+	 *
 	 * @return the parsed invoice object
 	 */
 	public Invoice extractInvoice() throws XPathExpressionException, ParseException {
@@ -147,7 +147,8 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			}
 		}
 
-		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeSettlement\"]|//*[local-name()=\"ApplicableSupplyChainTradeSettlement\"]");
+		xpr = xpath.compile(
+				"//*[local-name()=\"ApplicableHeaderTradeSettlement\"]|//*[local-name()=\"ApplicableSupplyChainTradeSettlement\"]");
 		NodeList headerTradeSettlementNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
 		for (int i = 0; i < headerTradeSettlementNodes.getLength(); i++) {
@@ -190,7 +191,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 		if (totalNodes.getLength() > 0) {
 			buyerReference = totalNodes.item(0).getTextContent();
 		}
-		if (buyerReference!=null) {
+		if (buyerReference != null) {
 			zpp.setReferenceNumber(buyerReference);
 		}
 
@@ -203,8 +204,11 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 				String price = "0";
 				String baseQuantity = "";
+				String baseUnitCode = "";
 				String name = "";
 				String description = "";
+				String sellerAssignedID = null;
+				String buyerAssignedID = null;
 				SchemedID gid = null;
 				String quantity = "0";
 				String vatPercent = null;
@@ -257,13 +261,17 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									.item(tradeLineChildIndex).getLocalName().equals("NetPriceProductTradePrice")) {
 								NodeList netChilds = tradeLineChilds.item(tradeLineChildIndex).getChildNodes();
 								for (int netIndex = 0; netIndex < netChilds.getLength(); netIndex++) {
-									if ((netChilds.item(netIndex).getLocalName() != null)
-											&& (netChilds.item(netIndex).getLocalName().equals("ChargeAmount"))) {
-										price = netChilds.item(netIndex).getTextContent();// ChargeAmount
+									Node item = netChilds.item(netIndex);
+									if ((item.getLocalName() != null) && (item.getLocalName().equals("ChargeAmount"))) {
+										price = item.getTextContent();// ChargeAmount
 									}
-									if ((netChilds.item(netIndex).getLocalName() != null)
-											&& (netChilds.item(netIndex).getLocalName().equals("BasisQuantity"))) {
-										baseQuantity = netChilds.item(netIndex).getTextContent();// BasisQuantity
+									if ((item.getLocalName() != null)
+											&& (item.getLocalName().equals("BasisQuantity"))) {
+										baseQuantity = item.getTextContent();// BasisQuantity
+										if (item.getAttributes().getNamedItem("unitCode") != null)
+											baseUnitCode = item.getAttributes().getNamedItem("unitCode").getNodeValue();
+										else
+											baseUnitCode = null;
 									}
 								}
 							}
@@ -293,6 +301,21 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
 											.equals("Name"))) {
 								name = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
+							}
+							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
+									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
+											.equals("SellerAssignedID"))) {
+								sellerAssignedID = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
+							}
+							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
+									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
+											.equals("BuyerAssignedID"))) {
+								buyerAssignedID = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
+							}
+							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
+									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
+											.equals("Description"))) {
+								description = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
 							}
 							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
 									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
@@ -330,7 +353,8 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									}
 								}
 
-								if (tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")) {
+								if (tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")
+										|| tradeSettlementName.equals("SpecifiedTradeSettlementMonetarySummation")) {
 									NodeList totalChilds = tradeSettlementChilds.item(tradeSettlementChildIndex)
 											.getChildNodes();
 									for (int totalChildIndex = 0; totalChildIndex < totalChilds
@@ -355,14 +379,25 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 				if (gid != null) {
 					p.addGlobalID(gid);
 				}
+				if (sellerAssignedID != null) {
+					p.setSellerAssignedID(sellerAssignedID);
+				}
+				if (buyerAssignedID != null) {
+					p.setBuyerAssignedID(buyerAssignedID);
+				}
+
 				Item it = new Item(p, prc, qty);
-				if (baseQuantity != null && !baseQuantity.isEmpty())
+				if (baseQuantity != null && !baseQuantity.isEmpty()) {
 					it.setBasisQuantity(new BigDecimal(baseQuantity.trim()));
+					it.setUnitBasis(baseUnitCode);
+				}
+				it.setUnit(unitCode);
 				if (rdocs != null) {
 					for (ReferencedDocument rdoc : rdocs) {
 						it.addReferencedDocument(rdoc);
 					}
 				}
+				it.setLineTotalAmount(new BigDecimal(lineTotal.trim()));
 				zpp.addItem(it);
 
 			}
@@ -482,6 +517,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 			}
 
+			zpp.setGrandTotalAmount(expectedGrandTotal);
 			if ((whichType != EStandard.despatchadvice)
 					&& ((!expectedStringTotalGross.equals(XMLTools.nDigitFormat(expectedGrandTotal, 2)))
 							&& (!ignoreCalculationErrors))) {

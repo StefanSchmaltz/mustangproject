@@ -64,6 +64,7 @@ public class Invoice implements IExportableTransaction {
 	protected String specifiedProcuringProjectName = null;
 	protected String despatchAdviceReferencedDocumentID = null;
 	protected String vatDueDateTypeCode = null;
+	private BigDecimal grandTotal;
 
 	public Invoice() {
 		ZFItems = new ArrayList<>();
@@ -719,6 +720,14 @@ public class Invoice implements IExportableTransaction {
 	public Invoice setVATDueDateTypeCode(String vatDueDateTypeCode) {
 		this.vatDueDateTypeCode = vatDueDateTypeCode;
 		return this;
+	}
+
+	public void setGrandTotalAmount(BigDecimal grandTotal) {
+		this.grandTotal = grandTotal;
+	}
+
+	public BigDecimal getGrandTotalAmount() {
+		return grandTotal;
 	}
 
 }

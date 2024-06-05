@@ -501,4 +501,8 @@ public interface IExportableTransaction {
 		return null;
 	}
 
+	default BigDecimal getGrandTotalAmount() {
+		return null;
+	}
+
 }
