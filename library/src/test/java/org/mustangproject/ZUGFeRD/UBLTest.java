@@ -21,7 +21,11 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,18 +33,18 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
 
+import javax.xml.xpath.XPathExpressionException;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mustangproject.BankDetails;
-import org.mustangproject.CII.CIIToUBL;
 import org.mustangproject.Contact;
 import org.mustangproject.Invoice;
 import org.mustangproject.Item;
 import org.mustangproject.Product;
 import org.mustangproject.TradeParty;
-
-import javax.xml.xpath.XPathExpressionException;
+import org.mustangproject.CII.CIIToUBL;
 
 public class UBLTest extends ResourceCase {
 	final String TARGET_XML = "./target/testout-1Lieferschein.xml";
@@ -112,6 +116,7 @@ public class UBLTest extends ResourceCase {
 			invoice = zii.extractInvoice();
 		} catch (XPathExpressionException | ParseException | FileNotFoundException e) {
 			hasExceptions = true;
+			e.printStackTrace();
 		}
 		assertFalse(hasExceptions);
 		// Reading ZUGFeRD

@@ -1,9 +1,6 @@
 package org.mustangproject;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.fop.util.XMLUtil;
 import org.mustangproject.ZUGFeRD.IReferencedDocument;
 import org.mustangproject.ZUGFeRD.IZUGFeRDAllowanceCharge;
@@ -11,7 +8,11 @@ import org.mustangproject.ZUGFeRD.IZUGFeRDExportableItem;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /***
  * describes any invoice line
@@ -32,11 +33,9 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * default constructor
-	 * 
 	 * @param product  contains the products name, tax rate, and unit
 	 * @param price    the base price of one item the product
-	 * @param quantity the number, dimensions or the weight of the delivered product
-	 *                 or good in this context
+	 * @param quantity the number, dimensions or the weight of the delivered product or good in this context
 	 */
 	public Item(Product product, BigDecimal price, BigDecimal quantity) {
 		this.price = price;
@@ -45,8 +44,9 @@ public class Item implements IZUGFeRDExportableItem {
 	}
 
 	/***
-	 * empty constructor do not use, but might be used e.g. by jackson
-	 */
+	 * empty constructor
+	 * do not use, but might be used e.g. by jackson
+	 * */
 	public Item() {
 	}
 
@@ -274,7 +274,6 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * BT 132 (issue https://github.com/ZUGFeRD/mustangproject/issues/247)
-	 * 
 	 * @return the line ID of the order (BT132)
 	 */
 	@Override
@@ -303,7 +302,6 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * the list price without VAT (sic!), refer to EN16931-1 for definition
-	 * 
 	 * @param grossPrice the list price without VAT
 	 * @return fluent setter
 	 */
@@ -400,7 +398,6 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * Adds a item level addition to the price (will be multiplied by quantity)
-	 * 
 	 * @see org.mustangproject.Charge
 	 * @param izac a relative or absolute charge
 	 * @return fluent setter
@@ -412,7 +409,6 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * Adds a item level reduction the price (will be multiplied by quantity)
-	 * 
 	 * @see org.mustangproject.Allowance
 	 * @param izac a relative or absolute allowance
 	 * @return fluent setter
@@ -424,7 +420,6 @@ public class Item implements IZUGFeRDExportableItem {
 
 	/***
 	 * adds item level freetext fields (includednote)
-	 * 
 	 * @param text UTF8 plain text
 	 * @return fluent setter
 	 */
@@ -437,9 +432,7 @@ public class Item implements IZUGFeRDExportableItem {
 	}
 
 	/***
-	 * adds item level Referenced documents along with their typecodes and
-	 * issuerassignedIDs
-	 * 
+	 * adds item level Referenced documents along with their typecodes and issuerassignedIDs
 	 * @param doc the ReferencedDocument to add
 	 * @return fluent setter
 	 */
@@ -460,9 +453,9 @@ public class Item implements IZUGFeRDExportableItem {
 	}
 
 	/***
-	 * specify a item level delivery period (apart from the document level delivery
-	 * period, and the document level delivery day, which is probably anyway
-	 * required)
+	 * specify a item level delivery period
+	 * (apart from the document level delivery period, and the document level
+	 * delivery day, which is probably anyway required)
 	 *
 	 * @param from start date
 	 * @param to   end date
@@ -475,9 +468,8 @@ public class Item implements IZUGFeRDExportableItem {
 	}
 
 	/***
-	 * specifies the item level delivery period (there is also one on document
-	 * level), this will be included in a BillingSpecifiedPeriod element
-	 * 
+	 * specifies the item level delivery period (there is also one on document level),
+	 * this will be included in a BillingSpecifiedPeriod element
 	 * @return the beginning of the delivery period
 	 */
 	public Date getDetailedDeliveryPeriodFrom() {
@@ -485,9 +477,8 @@ public class Item implements IZUGFeRDExportableItem {
 	}
 
 	/***
-	 * specifies the item level delivery period (there is also one on document
-	 * level), this will be included in a BillingSpecifiedPeriod element
-	 * 
+	 * specifies the item level delivery period (there is also one on document level),
+	 * this will be included in a BillingSpecifiedPeriod element
 	 * @return the end of the delivery period
 	 */
 	public Date getDetailedDeliveryPeriodTo() {
