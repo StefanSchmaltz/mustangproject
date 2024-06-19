@@ -23,7 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -161,6 +167,7 @@ public class ZUGFeRDImporter {
 
 
 	private void extractFiles(Map<String, PDComplexFileSpecification> names) throws IOException {
+		boolean useFirstXml = names.keySet().size() == 1;
 		for (final String alias : names.keySet()) {
 
 			final PDComplexFileSpecification fileSpec = names.get(alias);
@@ -168,7 +175,11 @@ public class ZUGFeRDImporter {
 			/**
 			 * filenames for invoice data (ZUGFeRD v1 and v2, Factur-X)
 			 */
-			if ((filename.equals("ZUGFeRD-invoice.xml") || (filename.equals("zugferd-invoice.xml")) || filename.equals("factur-x.xml")) || filename.equals("xrechnung.xml") || filename.equals("order-x.xml") || filename.equals("cida.xml")) {
+			if ((useFirstXml && filename.toLowerCase().endsWith(".xml"))
+					|| (filename.equals("ZUGFeRD-invoice.xml") || (filename.equals("zugferd-invoice.xml"))
+							|| filename.equals("factur-x.xml"))
+					|| filename.equals("xrechnung.xml") || filename.equals("order-x.xml")
+					|| filename.equals("cida.xml")) {
 				containsMeta = true;
 
 				final PDEmbeddedFile embeddedFile = fileSpec.getEmbeddedFile();
