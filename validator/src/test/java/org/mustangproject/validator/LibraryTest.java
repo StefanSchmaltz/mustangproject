@@ -179,7 +179,6 @@ public class LibraryTest extends ResourceCase {
 		ZUGFeRDValidator zfv = new ZUGFeRDValidator();
 
 		String res = zfv.validate(tempFile.getAbsolutePath());
-
 		assertThat(res).valueByXPath("count(//error)")
 				.asInt()
 				.isEqualTo(0);

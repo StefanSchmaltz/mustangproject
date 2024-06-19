@@ -1,6 +1,7 @@
 package org.mustangproject.ZUGFeRD;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -15,16 +16,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.mustangproject.Allowance;
-import org.mustangproject.Charge;
-import org.mustangproject.EStandard;
-import org.mustangproject.Invoice;
-import org.mustangproject.Item;
-import org.mustangproject.Product;
-import org.mustangproject.ReferencedDocument;
-import org.mustangproject.SchemedID;
-import org.mustangproject.TradeParty;
-import org.mustangproject.XMLTools;
+import org.mustangproject.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -43,6 +35,10 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 		super(filename);
 	}
 
+	public ZUGFeRDInvoiceImporter(InputStream stream) {
+		super(stream);
+	}
+
 	public void fromXML(String XML) {
 		try {
 			containsMeta = true;
@@ -52,12 +48,15 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 		}
 	}
 
+
 	/***
-	 * This will parse a XML into a invoice object
-	 *
+	 * This will parse a XML into the given invoice object
+	 * @param zpp the invoice to be altered
 	 * @return the parsed invoice object
+	 * @throws XPathExpressionException if xpath could not be evaluated
+	 * @throws ParseException if the grand total of the parsed invoice could not be replicated with the new invoice
 	 */
-	public Invoice extractInvoice() throws XPathExpressionException, ParseException {
+	public Invoice extractInto(Invoice zpp) throws XPathExpressionException, ParseException {
 
 		String number = "";
 		/*
@@ -67,16 +66,15 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 		 */
 		XPathFactory xpathFact = XPathFactory.newInstance();
 		XPath xpath = xpathFact.newXPath();
-		Invoice zpp = null;
-		XPathExpression xpr = xpath.compile("//*[local-name()=\"SellerTradeParty\"]");
+		XPathExpression xpr = xpath.compile("//*[local-name()=\"SellerTradeParty\"]|//*[local-name()=\"AccountingSupplierParty\"]/*");
 		NodeList SellerNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
-		xpr = xpath.compile("//*[local-name()=\"BuyerTradeParty\"]");
+		xpr = xpath.compile("//*[local-name()=\"BuyerTradeParty\"]|//*[local-name()=\"AccountingCustomerParty\"]/*");
 		NodeList BuyerNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 		xpr = xpath.compile("//*[local-name()=\"ExchangedDocument\"]|//*[local-name()=\"HeaderExchangedDocument\"]");
 		NodeList ExchangedDocumentNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
-		xpr = xpath.compile("//*[local-name()=\"GrandTotalAmount\"]");
+		xpr = xpath.compile("//*[local-name()=\"GrandTotalAmount\"]|//*[local-name()=\"PayableAmount\"]");
 		BigDecimal expectedGrandTotal = null;
 		NodeList totalNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 		if (totalNodes.getLength() > 0) {
@@ -92,7 +90,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			Node exchangedDocumentNode = ExchangedDocumentNodes.item(i);
 			NodeList exchangedDocumentChilds = exchangedDocumentNode.getChildNodes();
 			for (int documentChildIndex = 0; documentChildIndex < exchangedDocumentChilds
-					.getLength(); documentChildIndex++) {
+				.getLength(); documentChildIndex++) {
 				Node item = exchangedDocumentChilds.item(documentChildIndex);
 				if ((item.getLocalName() != null) && (item.getLocalName().equals("ID"))) {
 					number = item.getTextContent();
@@ -100,18 +98,34 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 				if ((item.getLocalName() != null) && (item.getLocalName().equals("IssueDateTime"))) {
 					NodeList issueDateTimeChilds = item.getChildNodes();
 					for (int issueDateChildIndex = 0; issueDateChildIndex < issueDateTimeChilds
-							.getLength(); issueDateChildIndex++) {
+						.getLength(); issueDateChildIndex++) {
 						if ((issueDateTimeChilds.item(issueDateChildIndex).getLocalName() != null)
-								&& (issueDateTimeChilds.item(issueDateChildIndex).getLocalName()
-										.equals("DateTimeString"))) {
+							&& (issueDateTimeChilds.item(issueDateChildIndex).getLocalName()
+							.equals("DateTimeString"))) {
 							issueDate = new SimpleDateFormat("yyyyMMdd")
-									.parse(issueDateTimeChilds.item(issueDateChildIndex).getTextContent());
+								.parse(issueDateTimeChilds.item(issueDateChildIndex).getTextContent());
 						}
 					}
 				}
 			}
 		}
-
+		String rootNode = extractString("local-name(/*)");
+		if (rootNode.equals("Invoice")) {
+			// UBL...
+			number = extractString("//*[local-name()=\"Invoice\"]/*[local-name()=\"ID\"]").trim();
+			issueDate = new SimpleDateFormat("yyyy-MM-dd")
+				.parse(extractString("//*[local-name()=\"Invoice\"]/*[local-name()=\"IssueDate\"]").trim());
+			String dueDt = extractString("//*[local-name()=\"Invoice\"]/*[local-name()=\"DueDate\"]").trim();
+			if (dueDt.length() > 0) {
+				dueDate = new SimpleDateFormat("yyyy-MM-dd")
+					.parse(dueDt);
+			}
+			String deliveryDt = extractString("//*[local-name()=\"Delivery\"]/*[local-name()=\"ActualDeliveryDate\"]").trim();
+			if (deliveryDt.length() > 0) {
+				deliveryDate = new SimpleDateFormat("yyyy-MM-dd")
+					.parse(deliveryDt);
+			}
+		}
 		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeDelivery\"]");
 		NodeList headerTradeDeliveryNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
@@ -120,25 +134,25 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			Node headerTradeDeliveryNode = headerTradeDeliveryNodes.item(i);
 			NodeList headerTradeDeliveryChilds = headerTradeDeliveryNode.getChildNodes();
 			for (int deliveryChildIndex = 0; deliveryChildIndex < headerTradeDeliveryChilds
-					.getLength(); deliveryChildIndex++) {
+				.getLength(); deliveryChildIndex++) {
 				if ((headerTradeDeliveryChilds.item(deliveryChildIndex).getLocalName() != null)
-						&& (headerTradeDeliveryChilds.item(deliveryChildIndex).getLocalName()
-								.equals("ActualDeliverySupplyChainEvent"))) {
+					&& (headerTradeDeliveryChilds.item(deliveryChildIndex).getLocalName()
+					.equals("ActualDeliverySupplyChainEvent"))) {
 					NodeList actualDeliveryChilds = headerTradeDeliveryChilds.item(deliveryChildIndex).getChildNodes();
 					for (int actualDeliveryChildIndex = 0; actualDeliveryChildIndex < actualDeliveryChilds
-							.getLength(); actualDeliveryChildIndex++) {
+						.getLength(); actualDeliveryChildIndex++) {
 						if ((actualDeliveryChilds.item(actualDeliveryChildIndex).getLocalName() != null)
-								&& (actualDeliveryChilds.item(actualDeliveryChildIndex).getLocalName()
-										.equals("OccurrenceDateTime"))) {
+							&& (actualDeliveryChilds.item(actualDeliveryChildIndex).getLocalName()
+							.equals("OccurrenceDateTime"))) {
 							NodeList occurenceChilds = actualDeliveryChilds.item(actualDeliveryChildIndex)
-									.getChildNodes();
+								.getChildNodes();
 							for (int occurenceChildIndex = 0; occurenceChildIndex < occurenceChilds
-									.getLength(); occurenceChildIndex++) {
+								.getLength(); occurenceChildIndex++) {
 								if ((occurenceChilds.item(occurenceChildIndex).getLocalName() != null)
-										&& (occurenceChilds.item(occurenceChildIndex).getLocalName()
-												.equals("DateTimeString"))) {
+									&& (occurenceChilds.item(occurenceChildIndex).getLocalName()
+									.equals("DateTimeString"))) {
 									deliveryDate = new SimpleDateFormat("yyyyMMdd")
-											.parse(occurenceChilds.item(occurenceChildIndex).getTextContent());
+										.parse(occurenceChilds.item(occurenceChildIndex).getTextContent());
 								}
 							}
 						}
@@ -147,31 +161,104 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			}
 		}
 
+		xpr = xpath.compile("//*[local-name()=\"ApplicableHeaderTradeAgreement\"]");
+		NodeList headerTradeAgreementNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
+		String buyerOrderIssuerAssignedID = null;
+		String sellerOrderIssuerAssignedID = null;
+		for (int i = 0; i < headerTradeAgreementNodes.getLength(); i++) {
+			// nodes.item(i).getTextContent())) {
+			Node headerTradeAgreementNode = headerTradeAgreementNodes.item(i);
+			NodeList headerTradeAgreementChilds = headerTradeAgreementNode.getChildNodes();
+			for (int agreementChildIndex = 0; agreementChildIndex < headerTradeAgreementChilds
+				.getLength(); agreementChildIndex++) {
+				if ((headerTradeAgreementChilds.item(agreementChildIndex).getLocalName() != null)
+					&& (headerTradeAgreementChilds.item(agreementChildIndex).getLocalName()
+					.equals("BuyerOrderReferencedDocument"))) {
+					NodeList buyerOrderChilds = headerTradeAgreementChilds.item(agreementChildIndex).getChildNodes();
+					for (int buyerOrderChildIndex = 0; buyerOrderChildIndex < buyerOrderChilds
+						.getLength(); buyerOrderChildIndex++) {
+						if ((buyerOrderChilds.item(buyerOrderChildIndex).getLocalName() != null)
+							&& (buyerOrderChilds.item(buyerOrderChildIndex).getLocalName()
+							.equals("IssuerAssignedID"))) {
+							buyerOrderIssuerAssignedID = buyerOrderChilds.item(buyerOrderChildIndex).getTextContent();
+						}
+					}
+				}
+				if ((headerTradeAgreementChilds.item(agreementChildIndex).getLocalName() != null)
+					&& (headerTradeAgreementChilds.item(agreementChildIndex).getLocalName()
+					.equals("SellerOrderReferencedDocument"))) {
+					NodeList sellerOrderChilds = headerTradeAgreementChilds.item(agreementChildIndex).getChildNodes();
+					for (int sellerOrderChildIndex = 0; sellerOrderChildIndex < sellerOrderChilds
+						.getLength(); sellerOrderChildIndex++) {
+						if ((sellerOrderChilds.item(sellerOrderChildIndex).getLocalName() != null)
+							&& (sellerOrderChilds.item(sellerOrderChildIndex).getLocalName()
+							.equals("IssuerAssignedID"))) {
+							sellerOrderIssuerAssignedID = sellerOrderChilds.item(sellerOrderChildIndex).getTextContent();
+						}
+					}
+				}
+			}
+
+		}
+
+
 		xpr = xpath.compile(
 				"//*[local-name()=\"ApplicableHeaderTradeSettlement\"]|//*[local-name()=\"ApplicableSupplyChainTradeSettlement\"]");
 		NodeList headerTradeSettlementNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
+		String IBAN = null, BIC = null;
 
 		for (int i = 0; i < headerTradeSettlementNodes.getLength(); i++) {
 			// nodes.item(i).getTextContent())) {
 			Node headerTradeSettlementNode = headerTradeSettlementNodes.item(i);
 			NodeList headerTradeSettlementChilds = headerTradeSettlementNode.getChildNodes();
 			for (int settlementChildIndex = 0; settlementChildIndex < headerTradeSettlementChilds
-					.getLength(); settlementChildIndex++) {
+				.getLength(); settlementChildIndex++) {
 				if ((headerTradeSettlementChilds.item(settlementChildIndex).getLocalName() != null)
-						&& (headerTradeSettlementChilds.item(settlementChildIndex).getLocalName()
-								.equals("SpecifiedTradePaymentTerms"))) {
+					&& (headerTradeSettlementChilds.item(settlementChildIndex).getLocalName()
+					.equals("SpecifiedTradePaymentTerms"))) {
 					NodeList paymentTermChilds = headerTradeSettlementChilds.item(settlementChildIndex).getChildNodes();
 					for (int paymentTermChildIndex = 0; paymentTermChildIndex < paymentTermChilds
-							.getLength(); paymentTermChildIndex++) {
+						.getLength(); paymentTermChildIndex++) {
 						if ((paymentTermChilds.item(paymentTermChildIndex).getLocalName() != null) && (paymentTermChilds
-								.item(paymentTermChildIndex).getLocalName().equals("DueDateDateTime"))) {
+							.item(paymentTermChildIndex).getLocalName().equals("DueDateDateTime"))) {
 							NodeList dueDateChilds = paymentTermChilds.item(paymentTermChildIndex).getChildNodes();
 							for (int dueDateChildIndex = 0; dueDateChildIndex < dueDateChilds
-									.getLength(); dueDateChildIndex++) {
+								.getLength(); dueDateChildIndex++) {
 								if ((dueDateChilds.item(dueDateChildIndex).getLocalName() != null) && (dueDateChilds
-										.item(dueDateChildIndex).getLocalName().equals("DateTimeString"))) {
+									.item(dueDateChildIndex).getLocalName().equals("DateTimeString"))) {
 									dueDate = new SimpleDateFormat("yyyyMMdd")
-											.parse(dueDateChilds.item(dueDateChildIndex).getTextContent());
+										.parse(dueDateChilds.item(dueDateChildIndex).getTextContent());
+								}
+							}
+						}
+					}
+				}
+
+				if ((headerTradeSettlementChilds.item(settlementChildIndex).getLocalName() != null)
+					&& (headerTradeSettlementChilds.item(settlementChildIndex).getLocalName()
+					.equals("SpecifiedTradeSettlementPaymentMeans"))) {
+					NodeList paymentMeansChilds = headerTradeSettlementChilds.item(settlementChildIndex).getChildNodes();
+					for (int paymentMeansChildIndex = 0; paymentMeansChildIndex < paymentMeansChilds
+						.getLength(); paymentMeansChildIndex++) {
+						if ((paymentMeansChilds.item(paymentMeansChildIndex).getLocalName() != null) && (paymentMeansChilds
+							.item(paymentMeansChildIndex).getLocalName().equals("PayeePartyCreditorFinancialAccount"))) {
+							NodeList accountChilds = paymentMeansChilds.item(paymentMeansChildIndex).getChildNodes();
+							for (int accountChildIndex = 0; accountChildIndex < accountChilds
+								.getLength(); accountChildIndex++) {
+								if ((accountChilds.item(accountChildIndex).getLocalName() != null) && (accountChilds
+									.item(accountChildIndex).getLocalName().equals("IBANID"))) {//CII
+									IBAN = accountChilds.item(accountChildIndex).getTextContent();
+								}
+							}
+						}
+						if ((paymentMeansChilds.item(paymentMeansChildIndex).getLocalName() != null) && (paymentMeansChilds
+							.item(paymentMeansChildIndex).getLocalName().equals("PayeePartyCreditorFinancialInstitution"))) {
+							NodeList accountChilds = paymentMeansChilds.item(paymentMeansChildIndex).getChildNodes();
+							for (int accountChildIndex = 0; accountChildIndex < accountChilds
+								.getLength(); accountChildIndex++) {
+								if ((accountChilds.item(accountChildIndex).getLocalName() != null) && (accountChilds
+									.item(accountChildIndex).getLocalName().equals("BICID"))) {//CII
+									BIC = accountChilds.item(accountChildIndex).getTextContent();
 								}
 							}
 						}
@@ -180,10 +267,50 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			}
 		}
 
-		zpp = new Invoice().setDueDate(dueDate).setDeliveryDate(deliveryDate).setIssueDate(issueDate)
-				.setSender(new TradeParty(SellerNodes)).setRecipient(new TradeParty(BuyerNodes)).setNumber(number);
+
+		xpr = xpath.compile("//*[local-name()=\"PaymentMeans\"]"); //UBL only
+		NodeList paymentMeansNodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
+
+		for (int i = 0; i < paymentMeansNodes.getLength(); i++) {
+			// nodes.item(i).getTextContent())) {
+			Node paymentMeansNode = paymentMeansNodes.item(i);
+			NodeList paymentMeansChilds = paymentMeansNode.getChildNodes();
+			for (int meansChildIndex = 0; meansChildIndex < paymentMeansChilds
+				.getLength(); meansChildIndex++) {
+				if ((paymentMeansChilds.item(meansChildIndex).getLocalName() != null)
+					&& (paymentMeansChilds.item(meansChildIndex).getLocalName()
+					.equals("PayeeFinancialAccount"))) {
+					NodeList paymentTermChilds = paymentMeansChilds.item(meansChildIndex).getChildNodes();
+					for (int paymentTermChildIndex = 0; paymentTermChildIndex < paymentTermChilds
+						.getLength(); paymentTermChildIndex++) {
+						if ((paymentTermChilds.item(paymentTermChildIndex).getLocalName() != null) && (paymentTermChilds
+							.item(paymentTermChildIndex).getLocalName().equals("ID"))) {
+							IBAN = paymentTermChilds.item(paymentTermChildIndex).getTextContent();
+						}
+					}
+				}
+			}
+		}
+
+		zpp.setDueDate(dueDate).setDeliveryDate(deliveryDate).setIssueDate(issueDate)
+			.setSender(new TradeParty(SellerNodes)).setRecipient(new TradeParty(BuyerNodes)).setNumber(number);
+		if (IBAN != null) {
+			BankDetails bd = new BankDetails(IBAN);
+			if (BIC != null) {
+				bd.setBIC(BIC);
+			}
+			zpp.getSender().addBankDetails(bd);
+		}
+
+		if (buyerOrderIssuerAssignedID != null) {
+			zpp.setBuyerOrderReferencedDocumentID(buyerOrderIssuerAssignedID);
+		}
+		if (sellerOrderIssuerAssignedID != null) {
+			zpp.setSellerOrderReferencedDocumentID(sellerOrderIssuerAssignedID);
+		}
+
 //.addItem(new Item(new Product("Testprodukt","","C62",BigDecimal.ZERO),amount,new BigDecimal(1.0)))
-		zpp.setOwnOrganisationName(extractString("//*[local-name()=\"SellerTradeParty\"]/*[local-name()=\"Name\"]"));
+		zpp.setOwnOrganisationName(extractString("//*[local-name()=\"SellerTradeParty\"]/*[local-name()=\"Name\"]|//*[local-name()=\"AccountingSupplierParty\"]/*[local-name()=\"Party\"]/*[local-name()=\"PartyName\"]").trim());
 
 		xpr = xpath.compile("//*[local-name()=\"BuyerReference\"]");
 		String buyerReference = null;
@@ -195,20 +322,15 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 			zpp.setReferenceNumber(buyerReference);
 		}
 
-		xpr = xpath.compile("//*[local-name()=\"IncludedSupplyChainTradeLineItem\"]");
+		xpr = xpath.compile("//*[local-name()=\"IncludedSupplyChainTradeLineItem\"]|//*[local-name()=\"InvoiceLine\"]");
 		NodeList nodes = (NodeList) xpr.evaluate(getDocument(), XPathConstants.NODESET);
 
-		if (nodes.getLength() == 0) {
-		} else {
+		if (nodes.getLength() != 0) {
 			for (int i = 0; i < nodes.getLength(); i++) {
 
 				String price = "0";
-				String baseQuantity = "";
-				String baseUnitCode = "";
 				String name = "";
 				String description = "";
-				String sellerAssignedID = null;
-				String buyerAssignedID = null;
 				SchemedID gid = null;
 				String quantity = "0";
 				String vatPercent = null;
@@ -261,17 +383,10 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									.item(tradeLineChildIndex).getLocalName().equals("NetPriceProductTradePrice")) {
 								NodeList netChilds = tradeLineChilds.item(tradeLineChildIndex).getChildNodes();
 								for (int netIndex = 0; netIndex < netChilds.getLength(); netIndex++) {
-									Node item = netChilds.item(netIndex);
-									if ((item.getLocalName() != null) && (item.getLocalName().equals("ChargeAmount"))) {
-										price = item.getTextContent();// ChargeAmount
-									}
-									if ((item.getLocalName() != null)
-											&& (item.getLocalName().equals("BasisQuantity"))) {
-										baseQuantity = item.getTextContent();// BasisQuantity
-										if (item.getAttributes().getNamedItem("unitCode") != null)
-											baseUnitCode = item.getAttributes().getNamedItem("unitCode").getNodeValue();
-										else
-											baseUnitCode = null;
+									if ((netChilds.item(netIndex).getLocalName() != null)
+											&& (netChilds.item(netIndex).getLocalName().equals("ChargeAmount"))) {
+										price = netChilds.item(netIndex).getTextContent();// ChargeAmount
+
 									}
 								}
 							}
@@ -301,21 +416,6 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
 											.equals("Name"))) {
 								name = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
-							}
-							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
-									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
-											.equals("SellerAssignedID"))) {
-								sellerAssignedID = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
-							}
-							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
-									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
-											.equals("BuyerAssignedID"))) {
-								buyerAssignedID = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
-							}
-							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
-									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
-											.equals("Description"))) {
-								description = tradeProductChilds.item(tradeProductChildIndex).getTextContent();
 							}
 							if ((tradeProductChilds.item(tradeProductChildIndex).getLocalName() != null)
 									&& (tradeProductChilds.item(tradeProductChildIndex).getLocalName()
@@ -353,8 +453,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 									}
 								}
 
-								if (tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")
-										|| tradeSettlementName.equals("SpecifiedTradeSettlementMonetarySummation")) {
+								if (tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")) {
 									NodeList totalChilds = tradeSettlementChilds.item(tradeSettlementChildIndex)
 											.getChildNodes();
 									for (int totalChildIndex = 0; totalChildIndex < totalChilds
@@ -379,25 +478,12 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 				if (gid != null) {
 					p.addGlobalID(gid);
 				}
-				if (sellerAssignedID != null) {
-					p.setSellerAssignedID(sellerAssignedID);
-				}
-				if (buyerAssignedID != null) {
-					p.setBuyerAssignedID(buyerAssignedID);
-				}
-
 				Item it = new Item(p, prc, qty);
-				if (baseQuantity != null && !baseQuantity.isEmpty()) {
-					it.setBasisQuantity(new BigDecimal(baseQuantity.trim()));
-					it.setUnitBasis(baseUnitCode);
-				}
-				it.setUnit(unitCode);
 				if (rdocs != null) {
 					for (ReferencedDocument rdoc : rdocs) {
 						it.addReferencedDocument(rdoc);
 					}
 				}
-				it.setLineTotalAmount(new BigDecimal(lineTotal.trim()));
 				zpp.addItem(it);
 
 			}
@@ -421,12 +507,12 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 						if (chargeChildName.equals("ChargeIndicator")) {
 							NodeList indicatorChilds = chargeNodeChilds.item(chargeChildIndex).getChildNodes();
 							for (int indicatorChildIndex = 0; indicatorChildIndex < indicatorChilds
-									.getLength(); indicatorChildIndex++) {
+								.getLength(); indicatorChildIndex++) {
 								if ((indicatorChilds.item(indicatorChildIndex).getLocalName() != null)
-										&& (indicatorChilds.item(indicatorChildIndex).getLocalName()
-												.equals("Indicator"))) {
+									&& (indicatorChilds.item(indicatorChildIndex).getLocalName()
+									.equals("Indicator"))) {
 									isCharge = indicatorChilds.item(indicatorChildIndex).getTextContent()
-											.equalsIgnoreCase("true");
+										.equalsIgnoreCase("true");
 								}
 							}
 						} else if (chargeChildName.equals("ActualAmount")) {
@@ -438,7 +524,7 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 							for (int taxChildIndex = 0; taxChildIndex < taxChilds.getLength(); taxChildIndex++) {
 								String taxItemName = taxChilds.item(taxChildIndex).getLocalName();
 								if ((taxItemName != null) && (taxItemName.equals("RateApplicablePercent")
-										|| taxItemName.equals("ApplicablePercent"))) {
+									|| taxItemName.equals("ApplicablePercent"))) {
 									taxPercent = taxChilds.item(taxChildIndex).getTextContent();
 								}
 							}
@@ -519,20 +605,41 @@ public class ZUGFeRDInvoiceImporter extends ZUGFeRDImporter {
 
 			zpp.setGrandTotalAmount(expectedGrandTotal);
 			if ((whichType != EStandard.despatchadvice)
-					&& ((!expectedStringTotalGross.equals(XMLTools.nDigitFormat(expectedGrandTotal, 2)))
-							&& (!ignoreCalculationErrors))) {
+				&& ((!expectedStringTotalGross.equals(XMLTools.nDigitFormat(expectedGrandTotal, 2)))
+				&& (!ignoreCalculationErrors))) {
 				throw new ParseException(
-						"Could not reproduce the invoice, this could mean that it could not be read properly", 0);
+					"Could not reproduce the invoice, this could mean that it could not be read properly", 0);
 			}
 		}
 		return zpp;
 
 	}
 
+	/***
+	 * This will parse a XML into a invoice object
+	 *
+	 * @return the parsed invoice object
+	 * @throws XPathExpressionException if internal xpath expressions were wrong
+	 * @throws ParseException if the grand total of the parsed invoice could not be replicated with the new invoice
+	 */
+	public Invoice extractInvoice() throws XPathExpressionException, ParseException {
+		Invoice i = new Invoice();
+		return extractInto(i);
+
+
+	}
+
+	/***
+	 * have the item prices be determined from the line total.
+	 * That's a workaround for some invoices which just put 0 as item price
+	 */
 	public void doRecalculateItemPricesFromLineTotals() {
 		recalcPrice = true;
 	}
 
+	/***
+	 * do not raise ParseExceptions even if the reproduced invoice total does not match the given value
+	 */
 	public void doIgnoreCalculationErrors() {
 		ignoreCalculationErrors = true;
 	}

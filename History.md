@@ -1,6 +1,79 @@
-- support multiple languages in visualization
-- support UBL input in visualization
-- resolve codelists in visualization
+
+- support pdf export/visualization to PDF, thanks to Heavenfighter #387 allow embedd fonts from jar-file for pdf creation #388
+- Fix #389: ClassCastException: ZUGFeRDExporterFromA3
+
+2.11.0
+=======
+2024-05-22
+
+- EN16931 validation 1.3.12 codelists v11 #357
+- Fonts removed #358
+- xrechnungimporter to read from filename, inputstream
+- invoice's getSender/getRecipient() now return tradeparty no IZUGFeRDExportableTradeParty
+- (first) IBAN is now parsed into sender's getBankDetails
+- zugferdimporter to accept xml files
+- UBL importer to also parse contacts
+- https://github.com/ZUGFeRD/mustangproject/pull/369
+- support inputstreams https://github.com/ZUGFeRD/mustangproject/pull/379
+- #314 ZUGFeRDInvoiceImporter additional constructur
+- add XML cash discount write support (new class, previously only possible for XRechnung, not ZF Extended, using a manually encoded setPaymentTermDescription) 
+- surrendered to XRechnung 3 compromises, e.g. no longer put gross amount if it does not deviate from net
+- be able to programmatically access validation messages  https://github.com/ZUGFeRD/mustangproject/pull/382
+
+2.10.0
+=======
+2023-12-30
+
+- also accept pdf/a3 from inputstream
+- closes #354 factur-x 1 from commandline
+- support XR 3.0.1 (#343), 
+  - i.e. processid
+  - set email in tradeparty class
+  - empty description remove
+
+2.9.0
+=======
+2023-11-27
+
+- Missing closing tag in BankDetails when there's no BIC number #339
+- ZUGFeRDExporterFromA3 did not set default ZUGFeRD Version
+- Have a way to merge to PDF file without knowing if it is A-1 or A-3 #341
+- Be able to validate XR 3.0 #347
+
+2.8.0
+=======
+2023-09-14
+
+- Improvement of included notes #331
+- fixes #259 by Heavenfighter
+- introduction of --disable-file-logging command line option
+
+2.7.3
+=======
+2023-06-16
+
+- \#328 parse SpecifiedTradeProduct/SellerAssignedID, SellerOrderReferencedDocument/ram:IssuerAssignedID and BuyerOrderReferencedDocument/ram:IssuerAssignedID in invoiceparser 
+
+2.7.2
+=======
+2023-06-09
+
+- \#322 support basis quantity in item class, invoice importer
+- \#327 expose validation results and location item (thanks to jpep-in) 
+
+2.7.1
+=======
+2023-05-25
+
+- \#317 (support conversion towards peppol #282)
+- \#313 Update CII2UBL library
+- https://github.com/ZUGFeRD/mustangproject/pull/315 invoiceimporter constructor for InputStream
+- be able to extract data into existing invoice objects
+
+2.7.0
+=======
+2023-04-17
+- support english and french output in factur-x visualization (read: conversion to HTML), UBL invoice and creditnote input+ resolve codelist attributes (thanks to https://jcthiele.github.io/xrechnung-visualization-codelist-resolve/)
 
 2.6.2 "Happy Easter"
 =======
@@ -53,7 +126,7 @@
 =======
 2022-09-22
 
-Removed a unneccessary dependency (ph-jaxb).
+Removed an unnecessary dependency (ph-jaxb).
 Added some javadoc.
 
 2.5.5
@@ -187,7 +260,7 @@ To prevent regressions it is recommended to re-validate your PDF output after up
 - allow 1.2 and 2.0 in RDF versions for XRechnung 2.0 Referenzprofil 
 - also use shortcut "t" for extended in zf1 #230
 - falscher Text in Exception #237
-- pr 240 ignore input pdf errors when specfied on command line https://github.com/ZUGFeRD/mustangproject/pull/240
+- pr 240 ignore input pdf errors when specified on command line https://github.com/ZUGFeRD/mustangproject/pull/240
 - pr 241 use sepa transfer instead of bank transfer https://github.com/ZUGFeRD/mustangproject/pull/241
 - be able to validate Order-X files
 
@@ -295,7 +368,7 @@ switch
 - new invoicecorrection class
 - order-x xml read support
 - support included notes on document and item level 
-- occurence periods  setOccurrencePeriod(Date start, Date end)
+- occurrence periods  setOccurrencePeriod(Date start, Date end)
 - automated tests zuv/verapdf validate created library test files
 - trans.getTradeSettlementPayment() removed in favor of trans.getTradeSettlement()
 - commandline option for no notices
@@ -360,7 +433,7 @@ Mustangproject 1.7.6
 2020-02-06
 
 - support different ship to address
-- allow for diffent namespace prefixes #140
+- allow for different namespace prefixes #140
 - include exemption reason if doing intra community supply
 - allow different currencies also for ZF2 (#150)
 - minor correction VAT exemptions

@@ -21,12 +21,15 @@
  */
 package org.mustangproject.ZUGFeRD;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.mustangproject.*;
 import org.junit.FixMethodOrder;
@@ -54,6 +57,7 @@ public class ZF2PushTest extends TestCase {
 	final String TARGET_CHARGESALLOWANCESPDF = "./target/testout-ZF2PushChargesAllowances.pdf";
 	final String TARGET_RELATIVECHARGESALLOWANCESPDF = "./target/testout-ZF2PushRelativeChargesAllowances.pdf";
 	final String TARGET_ATTACHMENTSPDF = "./target/testout-ZF2PushAttachments.pdf";
+	final String TARGET_BANKPDF = "./target/testout-ZF2PushBank.pdf";
 	final String TARGET_PUSHEDGE = "./target/testout-ZF2PushEdge.pdf";
 	final String TARGET_INTRACOMMUNITYSUPPLYPDF = "./target/testout-ZF2PushIntraCommunitySupply.pdf";
 	final String TARGET_REVERSECHARGEPDF = "./target/testout-ZF2PushReverseCharge.pdf";
@@ -89,7 +93,7 @@ public class ZF2PushTest extends TestCase {
 
 			ze.export(TARGET_PDF);
 		} catch (IOException | ParseException e) {
-			fail("Exception should not be raised in testPushExport");
+			fail("Exception should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -122,11 +126,11 @@ public class ZF2PushTest extends TestCase {
 		String taxID = "9990815";
 		BigDecimal price = new BigDecimal(priceStr);
 		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
-					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
-					 .load(SOURCE_PDF)) {
+				 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
+				 .load(SOURCE_PDF)) {
 
 			byte[] b = {12, 13};
 			ze.attachFile("one.pdf", b, "application/pdf", "Alternative");
@@ -138,7 +142,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_ATTACHMENTSPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -156,6 +160,44 @@ public class ZF2PushTest extends TestCase {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+
+	}
+	public void testBankTransferExport() {
+
+		String orgname = "Test company";
+		String number = "123";
+		String priceStr = "1.00";
+		String taxID = "9990815";
+		BigDecimal price = new BigDecimal(priceStr);
+		try (InputStream SOURCE_PDF = this.getClass()
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+
+			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
+				 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
+				 .load(SOURCE_PDF)) {
+
+			String IBAN="DE999888777";
+			String BIC="COBADEFXXX";
+			BankDetails bd=new BankDetails(IBAN, BIC);
+			ze.setTransaction(new Invoice().setDueDate(new Date()).setIssueDate(new Date()).setDeliveryDate(new Date()).setSender(new TradeParty(orgname, "teststr", "55232", "teststadt", "DE").addBankDetails(bd).addTaxID(taxID)).setOwnVATID("DE0815").setRecipient(new TradeParty("Franz Müller", "teststr.12", "55232", "Entenhausen", "DE").addVATID("DE4711").setContact(new Contact("Franz Müller", "01779999999", "franz@mueller.de", "teststr. 12", "55232", "Entenhausen", "DE"))).setNumber(number).addItem(new Item(new Product("Testprodukt", "", "C62", new BigDecimal(19)), price, new BigDecimal(1.0)))
+
+			);
+			String theXML = new String(ze.getProvider().getXML());
+			Invoice read=new Invoice();
+			ZUGFeRDInvoiceImporter zii=new ZUGFeRDInvoiceImporter(new ByteArrayInputStream(theXML.getBytes(StandardCharsets.UTF_8)));
+			zii.extractInto(read);
+			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
+
+			//assertEquals(IBAN,read.getSender().getBankDetails().get(0).getIBAN());
+			ze.export(TARGET_BANKPDF);
+		} catch (IOException e) {
+			fail("IOException should not be raised");
+		} catch (XPathExpressionException e) {
+			fail("XPathException should not be raised");
+        } catch (ParseException e) {
+			fail("ParseException should not be raised");
+        }
 
 
 	}
@@ -188,7 +230,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_ITEMCHARGESALLOWANCESPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -242,7 +284,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_INTRACOMMUNITYSUPPLYPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -291,7 +333,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_REVERSECHARGEPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -337,7 +379,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_CHARGESALLOWANCESPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -375,7 +417,7 @@ public class ZF2PushTest extends TestCase {
 				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
-					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
+					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("extended")).ignorePDFAErrors()
 					 .load(SOURCE_PDF)) {
 
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -384,14 +426,16 @@ public class ZF2PushTest extends TestCase {
 				SchemedID gtin=new SchemedID("0160","2001015001325");
 				SchemedID gln=new SchemedID("0088","4304171000002");
 				ze.setTransaction(new Invoice().setCurrency("CHF").addNote("document level 1/2").addNote("document level 2/2").setDueDate(new Date()).setIssueDate(new Date()).setDeliveryDate(new Date())
+						.setSellerOrderReferencedDocumentID("9384").setBuyerOrderReferencedDocumentID("28934")
 						.setDetailedDeliveryPeriod(new SimpleDateFormat("yyyyMMdd").parse(occurrenceFrom), new SimpleDateFormat("yyyyMMdd").parse(occurrenceTo))
-						.setSender(new TradeParty(orgname, "teststr", "55232", "teststadt", "DE").addTaxID(taxID).setID("0009845"))
+						.setSender(new TradeParty(orgname, "teststr", "55232", "teststadt", "DE").addTaxID(taxID).setEmail("sender@test.org").setID("0009845"))
 						.setDeliveryAddress(new TradeParty("just the other side of the street", "teststr.12a", "55232", "Entenhausen", "DE").addVATID("DE47110"))
 						.setContractReferencedDocument(contractID)
-						.setRecipient(new TradeParty("Franz Müller", "teststr.12", "55232", "Entenhausen", "DE").addGlobalID(gln).addVATID("DE4711").setContact(new Contact("Franz Müller", "01779999999", "franz@mueller.de", "teststr. 12", "55232", "Entenhausen", "DE").setFax("++49555123456")).setAdditionalAddress("Hinterhaus 3"))
-						.addItem(new Item(new Product("Testprodukt", "", "C62", new BigDecimal(16)).addGlobalID(gtin), price, new BigDecimal(1.0)).addReferencedLineID("xxx").addNote("item level 1/1").addAllowance(new Allowance(new BigDecimal(0.02)).setReason("item discount").setTaxPercent(new BigDecimal(16))).setDetailedDeliveryPeriod(sdf.parse("2020-01-13"), sdf.parse("2020-01-15")))
+						.setRecipient(new TradeParty("Franz Müller", "teststr.12", "55232", "Entenhausen", "DE").addGlobalID(gln).setEmail("recipient@test.org").addVATID("DE4711").setContact(new Contact("Franz Müller", "01779999999", "franz@mueller.de", "teststr. 12", "55232", "Entenhausen", "DE").setFax("++49555123456")).setAdditionalAddress("Hinterhaus 3"))
+						.addItem(new Item(new Product("Testprodukt", "", "C62", new BigDecimal(16)).addGlobalID(gtin).setSellerAssignedID("4711"), price, new BigDecimal(1.0)).addReferencedLineID("xxx").addNote("item level 1/1").addAllowance(new Allowance(new BigDecimal(0.02)).setReason("item discount").setTaxPercent(new BigDecimal(16))).setDetailedDeliveryPeriod(sdf.parse("2020-01-13"), sdf.parse("2020-01-15")))
 						.addCharge(new Charge(new BigDecimal(0.5)).setReason("quick delivery charge").setTaxPercent(new BigDecimal(16)))
 						.addAllowance(new Allowance(new BigDecimal(0.2)).setReason("discount").setTaxPercent(new BigDecimal(16)))
+						.addCashDiscount(new CashDiscount(new BigDecimal(2),14))
 						.setDeliveryDate(sdf.parse("2020-11-02")).setOwnVATID("DE0815").setNumber(number).setVATDueDateTypeCode(EventTimeCodeTypeConstants.PAYMENT_DATE)
 				);
 			} catch (ParseException e) {
@@ -402,7 +446,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_PUSHEDGE);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -430,7 +474,8 @@ public class ZF2PushTest extends TestCase {
 		assertTrue(zi.getUTF8().contains("DE4711")); // the VAT ID should be there...
 		assertFalse(zi.getUTF8().contains("DE47110")); // but not the VAT ID of the shiptotradeparty
 		assertTrue(zi.getUTF8().contains("document level 2/2"));
-		assertFalse(zi.getUTF8().contains("++49555123456")); // in profile EN16931 contact fax number is not allowed
+		assertTrue(zi.getUTF8().contains("++49555123456"));
+		assertTrue(zi.getUTF8().contains("Cash Discount")); // default description for cash discounts
 		assertThat(zi.getUTF8()).valueByXPath("//*[local-name()='ApplicableTradeTax']/*[local-name()='DueDateTypeCode']").asString()
 				.isEqualTo(EventTimeCodeTypeConstants.PAYMENT_DATE);
 
@@ -443,9 +488,9 @@ public class ZF2PushTest extends TestCase {
 
 
 		} catch (XPathExpressionException e) {
-			fail("XPathExpressionException should not be raised in testEdgeExport");
+			fail("XPathExpressionException should not be raised");
 		} catch (ParseException e) {
-			fail("ParseException should not be raised in testEdgeExport");
+			fail("ParseException should not be raised");
 			/* a parseException would also be fired if the calculated grand total does not
 			match the read grand total */
 		}
@@ -475,7 +520,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_ALLOWANCESPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -520,7 +565,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_RELATIVECHARGESALLOWANCESPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -570,7 +615,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_CORRECTIONPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)
@@ -619,7 +664,7 @@ public class ZF2PushTest extends TestCase {
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 			ze.export(TARGET_CREDITNOTEPDF);
 		} catch (IOException e) {
-			fail("IOException should not be raised in testEdgeExport");
+			fail("IOException should not be raised");
 		}
 
 		// now check the contents (like MustangReaderTest)

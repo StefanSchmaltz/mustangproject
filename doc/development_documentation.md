@@ -1,5 +1,5 @@
 
-## General approach
+## Typical process
 
 1. build
 
@@ -17,16 +17,29 @@ You may already start developing what you wanted. Of course you can use any edit
 
 2. fork
 
-Once you can build, the idea is that you contribute patches via pull requests. For this you need a github account and  a personal copy of the repository to store your changes in. Just klick fork on the mustangproject. On your copy you will have git write access. My suggestion as git client is sourcetree (I can send you instructions how to set it up).
+Once you can build, the idea is that you contribute patches via pull requests. For this you need a GitHub account and  a personal copy of the repository to store your changes in. Just click fork on the mustangproject. On your copy you will have git write access. My suggestion as git client is sourcetree.
+There is a documentation [how to create pull requests from forks to the original repo](https://docs.github.com/de/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).  
 
 3. branch
 
-If you do a pull request, please do a feature branch, e.g. if you are working on a feature abc you could call your branch feature_abc. Merge requests unfortunately don't work if you don't have a branch you request merge of. Technically we follow the "github flow" strategy (not to be exchanged with the more sophisticated "git flow" strategy)
+If you do a pull request, please do a feature branch, e.g. if you are working on a feature abc you could call your branch feature_abc. Merge requests unfortunately don't work if you don't have a branch you request merge of. Technically we follow the "GitHub flow" strategy (not to be exchanged with the more sophisticated "git flow" strategy)
 
 4. test
 
 Most of mustang is a library, adding (autmated junit) test cases is often not only the most sustainable but also the fastest way to see if new/changed functionality works. If something is changed so that old test cases break on purpose please do not just remove them but take the time to fix the test cases
 
+
+## Typical workflow
+
+If e.g. new elements or attributes are added, they are often added
+* in the object so that a developer can use them
+* in the interface so that a old fashioned developer could use them as well
+* in the pullprovider so that it actually finds it's way into the XML
+* in at least one test (the ...edgeTest are supposed to handle edge cases, ~all bells and whistles, maybe it fits there), after the test has been run this should at least once be 
+* validated. If that works one can start implementing the 
+* reading part (along with tests), then it needs to be
+* documented e.g. on the homepage and 
+* communicated, at the very least by mentioning it in the history.md
 
 ## Architecture
 
@@ -38,7 +51,7 @@ library.
 
 ![Architecture of mustangproject](Mustang-Architecture.svg "Graph of the architecture of Mustangproject")
 
-The validator component embeds VeraPDF, a open-source
+The validator component embeds VeraPDF, an open-source
 PDF/A-validator, via maven dependency and uses standard java
 checks against schema and ph-schematron for checks against the schematron
 to validate the XML part of the invoices.
@@ -67,15 +80,6 @@ mvnw clean package -P generateXSLTFromSchematron
 
 `package -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8001 -Xnoagent -Djava.compiler=NONE"`
 can be used as debug configuration goal in Eclipse. In that case you can set breakpoints in tests.
-
-## Validate
-
-The former ZUGFeRD VeraPDF [ZUV](https://github.com/ZUGFeRD/ZUV/) validator
-is now part of Mustangproject. 
-The JUnit tests of the validator component will also run through a couple of
-test files of the library component.
-
-
 
 
 ## Deployment
@@ -151,7 +155,7 @@ The whole settings.xml then looks e.g. like this
 </settings>
 ```
 
-The TOKEN is generated on github.
+The TOKEN is generated on GitHub.
 Deployment to maven central is described e.g. on [dzone](https://dzone.com/articles/publish-your-artifacts-to-maven-central).
 See the following screenshot:
 Sign in in GitHub and click on the profile picture -> Settings. Now just generate a new token and set the checkboxes from the screenshot.
@@ -212,16 +216,15 @@ Afterwards you can access the release page and update the documentation, e.g. up
 
 ## Regular updates
 
-XRechnung from https://github.com/itplr-kosit/xrechnung-schematron,
-put in schematro, have xslt generated, potentially manually include
-the included file
+Take the most recent XRechnung release from https://github.com/itplr-kosit/xrechnung-schematron,
+extract, rename xsl file to xslt, move to new version dir and add a if where the version is determined :-)
 
 ## Release process
 
   * Update documentation
   * write/translate announcement
   * release via/for mvn
-  * Publish a github release
+  * Publish a GitHub release
   * update mustangproject.org RE
     * version number and release date
     * sample file?

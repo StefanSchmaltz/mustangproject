@@ -22,14 +22,11 @@ package org.mustangproject;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
-import org.mustangproject.ZUGFeRD.IExportableTransaction;
-import org.mustangproject.ZUGFeRD.IZUGFeRDAllowanceCharge;
-import org.mustangproject.ZUGFeRD.IZUGFeRDExportableItem;
-import org.mustangproject.ZUGFeRD.IZUGFeRDExportableTradeParty;
-import org.mustangproject.ZUGFeRD.IZUGFeRDPaymentTerms;
-import org.mustangproject.ZUGFeRD.IZUGFeRDTradeSettlement;
+import org.mustangproject.ZUGFeRD.*;
 import org.mustangproject.ZUGFeRD.model.DocumentCodeTypeConstants;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -45,19 +42,21 @@ public class Invoice implements IExportableTransaction {
 	protected String documentName = null, documentCode = null, number = null, ownOrganisationFullPlaintextInfo = null, referenceNumber = null, shipToOrganisationID = null, shipToOrganisationName = null, shipToStreet = null, shipToZIP = null, shipToLocation = null, shipToCountry = null, buyerOrderReferencedDocumentID = null, invoiceReferencedDocumentID = null, buyerOrderReferencedDocumentIssueDateTime = null, ownForeignOrganisationID = null, ownOrganisationName = null, currency = null, paymentTermDescription = null;
 	protected Date issueDate = null, dueDate = null, deliveryDate = null;
 	protected TradeParty sender = null, recipient = null, deliveryAddress = null;
-	@JsonDeserialize(contentAs=Item.class)
+	protected ArrayList<CashDiscount> cashDiscounts = null;
+	@JsonDeserialize(contentAs = Item.class)
 	protected ArrayList<IZUGFeRDExportableItem> ZFItems = null;
 	protected ArrayList<String> notes = null;
-  	protected String sellerOrderReferencedDocumentID;
+	private List<IncludedNote> includedNotes = null;
+	protected String sellerOrderReferencedDocumentID;
 	protected String contractReferencedDocument = null;
-	protected ArrayList<FileAttachment> xmlEmbeddedFiles=null;
+	protected ArrayList<FileAttachment> xmlEmbeddedFiles = null;
 
 	protected BigDecimal totalPrepaidAmount = null;
 	protected Date detailedDeliveryDateStart = null;
 	protected Date detailedDeliveryPeriodEnd = null;
 
 	protected ArrayList<IZUGFeRDAllowanceCharge> Allowances = new ArrayList<>(),
-			Charges = new ArrayList<>(), LogisticsServiceCharges = new ArrayList<>();
+		Charges = new ArrayList<>(), LogisticsServiceCharges = new ArrayList<>();
 	protected IZUGFeRDPaymentTerms paymentTerms = null;
 	protected Date invoiceReferencedIssueDate;
 	protected String specifiedProcuringProjectID = null;
@@ -68,6 +67,7 @@ public class Invoice implements IExportableTransaction {
 
 	public Invoice() {
 		ZFItems = new ArrayList<>();
+		cashDiscounts = new ArrayList<>();
 		setCurrency("EUR");
 	}
 
@@ -77,7 +77,7 @@ public class Invoice implements IExportableTransaction {
 	}
 
 	@Override
-  public String getContractReferencedDocument() {
+	public String getContractReferencedDocument() {
 		return contractReferencedDocument;
 	}
 
@@ -98,14 +98,14 @@ public class Invoice implements IExportableTransaction {
 
 	public Invoice embedFileInXML(FileAttachment fa) {
 		if (xmlEmbeddedFiles == null) {
-			xmlEmbeddedFiles= new ArrayList<>();
+			xmlEmbeddedFiles = new ArrayList<>();
 		}
 		xmlEmbeddedFiles.add(fa);
 		return this;
 	}
 
 	@Override
-  public FileAttachment[] getAdditionalReferencedDocuments() {
+	public FileAttachment[] getAdditionalReferencedDocuments() {
 		if (xmlEmbeddedFiles == null) {
 			return null;
 		}
@@ -113,6 +113,10 @@ public class Invoice implements IExportableTransaction {
 
 	}
 
+	@Override
+	public IZUGFeRDCashDiscount[] getCashDiscounts() {
+		return cashDiscounts.toArray(new IZUGFeRDCashDiscount[0]);
+	}
 
 	@Override
 	public String getNumber() {
@@ -137,6 +141,7 @@ public class Invoice implements IExportableTransaction {
 		documentCode = DocumentCodeTypeConstants.CORRECTEDINVOICE;
 		return this;
 	}
+
 	public Invoice setCreditNote() {
 		documentCode = DocumentCodeTypeConstants.CREDITNOTE;
 		return this;
@@ -227,16 +232,18 @@ public class Invoice implements IExportableTransaction {
 	public String getBuyerOrderReferencedDocumentID() {
 		return buyerOrderReferencedDocumentID;
 	}
+
 	@Override
 	public String getSellerOrderReferencedDocumentID() {
 		return sellerOrderReferencedDocumentID;
 	}
 
 
-  public Invoice setSellerOrderReferencedDocumentID(String sellerOrderReferencedDocumentID) {
-    this.sellerOrderReferencedDocumentID = sellerOrderReferencedDocumentID;
-    return this;
-  }
+	public Invoice setSellerOrderReferencedDocumentID(String sellerOrderReferencedDocumentID) {
+		this.sellerOrderReferencedDocumentID = sellerOrderReferencedDocumentID;
+		return this;
+	}
+
 	/***
 	 * usually the order number
 	 * @param buyerOrderReferencedDocumentID string with number
@@ -256,22 +263,23 @@ public class Invoice implements IExportableTransaction {
 		this.invoiceReferencedDocumentID = invoiceReferencedDocumentID;
 		return this;
 	}
+
 	@Override
 	public String getInvoiceReferencedDocumentID() {
 		return invoiceReferencedDocumentID;
 	}
 
-  @Override
-  public Date getInvoiceReferencedIssueDate() {
-    return invoiceReferencedIssueDate;
-  }
+	@Override
+	public Date getInvoiceReferencedIssueDate() {
+		return invoiceReferencedIssueDate;
+	}
 
-  public Invoice setInvoiceReferencedIssueDate(Date issueDate) {
-	  this.invoiceReferencedIssueDate = issueDate;
-	  return this;
-  }
-  
-  @Override
+	public Invoice setInvoiceReferencedIssueDate(Date issueDate) {
+		this.invoiceReferencedIssueDate = issueDate;
+		return this;
+	}
+
+	@Override
 	public String getBuyerOrderReferencedDocumentIssueDateTime() {
 		return buyerOrderReferencedDocumentIssueDateTime;
 	}
@@ -283,7 +291,7 @@ public class Invoice implements IExportableTransaction {
 	 * @return fluent setter
 	 */
 	public Invoice setTotalPrepaidAmount(BigDecimal prepaid) {
-		totalPrepaidAmount=prepaid;
+		totalPrepaidAmount = prepaid;
 		return this;
 	}
 
@@ -378,13 +386,13 @@ public class Invoice implements IExportableTransaction {
 
 
 	@Override
-  public String getOwnLocation() {
+	public String getOwnLocation() {
 		return sender.getLocation();
 	}
 
 
 	@Override
-  public String getOwnCountry() {
+	public String getOwnCountry() {
 		return sender.getCountry();
 	}
 
@@ -395,6 +403,11 @@ public class Invoice implements IExportableTransaction {
 			return null;
 		}
 		return notes.toArray(new String[0]);
+	}
+
+	@Override
+	public List<IncludedNote> getNotesWithSubjectCode() {
+		return includedNotes;
 	}
 
 	@Override
@@ -448,7 +461,7 @@ public class Invoice implements IExportableTransaction {
 	}
 
 	@Override
-	public IZUGFeRDExportableTradeParty getSender() {
+	public TradeParty getSender() {
 		return sender;
 	}
 
@@ -466,13 +479,14 @@ public class Invoice implements IExportableTransaction {
 	}
 
 	@Override
-  public IZUGFeRDExportableTradeParty getRecipient() {
+	public TradeParty getRecipient() {
 		return recipient;
 	}
 
 	/**
 	 * required.
 	 * sets the invoice receiving institution = invoicee
+	 *
 	 * @param recipient the invoicee organisation
 	 * @return fluent setter
 	 */
@@ -484,6 +498,7 @@ public class Invoice implements IExportableTransaction {
 	/**
 	 * required.
 	 * sets the invoicing institution = invoicer
+	 *
 	 * @param sender the invoicer
 	 * @return fluent setter
 	 */
@@ -501,8 +516,8 @@ public class Invoice implements IExportableTransaction {
 		if (Allowances.isEmpty()) {
 			return null;
 		} else {
-      return Allowances.toArray(new IZUGFeRDAllowanceCharge[0]);
-    }
+			return Allowances.toArray(new IZUGFeRDAllowanceCharge[0]);
+		}
 	}
 
 
@@ -511,8 +526,8 @@ public class Invoice implements IExportableTransaction {
 		if (Charges.isEmpty()) {
 			return null;
 		} else {
-      return Charges.toArray(new IZUGFeRDAllowanceCharge[0]);
-    }
+			return Charges.toArray(new IZUGFeRDAllowanceCharge[0]);
+		}
 	}
 
 
@@ -521,8 +536,8 @@ public class Invoice implements IExportableTransaction {
 		if (LogisticsServiceCharges.isEmpty()) {
 			return null;
 		} else {
-      return LogisticsServiceCharges.toArray(new IZUGFeRDAllowanceCharge[0]);
-    }
+			return LogisticsServiceCharges.toArray(new IZUGFeRDAllowanceCharge[0]);
+		}
 	}
 
 	public void addZFLogisticsServiceCharge(Charge charge) {
@@ -565,22 +580,33 @@ public class Invoice implements IExportableTransaction {
 		this.deliveryAddress = deliveryAddress;
 		return this;
 	}
+	/***
+	 * Adds a cash discount (skonto)
+	 * @param c the CashDiscount percent/period combination
+	 * @return fluent setter
+	 */
+	public Invoice addCashDiscount(CashDiscount c) {
+		this.cashDiscounts.add(c);
+		return this;
+	}
+
 
 	@Override
 	public IZUGFeRDExportableItem[] getZFItems() {
 		return ZFItems.toArray(new IZUGFeRDExportableItem[0]);
 	}
 
-	public void setZFItems(ArrayList<IZUGFeRDExportableItem>  ims) {
-		ZFItems=ims;
+	public void setZFItems(ArrayList<IZUGFeRDExportableItem> ims) {
+		ZFItems = ims;
 	}
 
 	/**
 	 * required
 	 * adds invoice "lines" :-)
-	 * @see Item
+	 *
 	 * @param item the invoice line
 	 * @return fluent setter
+	 * @see Item
 	 */
 	public Invoice addItem(IZUGFeRDExportableItem item) {
 		ZFItems.add(item);
@@ -663,8 +689,9 @@ public class Invoice implements IExportableTransaction {
 	}
 
 
-	/***
-	 * adds a free text paragraph, which will become a includedNote element
+	/**
+	 * adds a free text paragraph, which will become an includedNote element
+	 *
 	 * @param text freeform UTF8 plain text
 	 * @return fluent setter
 	 */
@@ -673,6 +700,137 @@ public class Invoice implements IExportableTransaction {
 			notes = new ArrayList<>();
 		}
 		notes.add(text);
+		return this;
+	}
+
+	public Invoice addNotes(Collection<IncludedNote> notes) {
+		if (notes == null) {
+			return this;
+		}
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.addAll(notes);
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#AAI}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addGeneralNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.generalNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#REG}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addRegulatoryNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.regulatoryNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#ABL}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addLegalNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.legalNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#CUS}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addCustomsNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.customsNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#SUR}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addSellerNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.sellerNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#TXD}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addTaxNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.taxNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#ACY}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addIntroductionNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.introductionNote(content));
+		return this;
+	}
+
+	/**
+	 * adds a free text paragraph, which will become an includedNote element with explicit
+	 * subjectCode {@link SubjectCode#AAK}
+	 *
+	 * @param content freeform UTF8 plain text
+	 * @return fluent setter
+	 */
+	public Invoice addDiscountBonusNote(String content) {
+		if (includedNotes == null) {
+			includedNotes = new ArrayList<>();
+		}
+		includedNotes.add(IncludedNote.discountBonusNote(content));
 		return this;
 	}
 
@@ -715,7 +873,9 @@ public class Invoice implements IExportableTransaction {
 
 	/**
 	 * Decide when the VAT should be collected.
+	 *
 	 * @param vatDueDateTypeCode use EventTimeCodeTypeConstants
+	 * @return fluent setter
 	 */
 	public Invoice setVATDueDateTypeCode(String vatDueDateTypeCode) {
 		this.vatDueDateTypeCode = vatDueDateTypeCode;
