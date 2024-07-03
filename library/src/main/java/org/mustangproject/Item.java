@@ -1,18 +1,17 @@
 package org.mustangproject;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.apache.fop.util.XMLUtil;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Date;
+
 import org.mustangproject.ZUGFeRD.IReferencedDocument;
 import org.mustangproject.ZUGFeRD.IZUGFeRDAllowanceCharge;
 import org.mustangproject.ZUGFeRD.IZUGFeRDExportableItem;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /***
  * describes any invoice line
@@ -227,7 +226,8 @@ public class Item implements IZUGFeRDExportableItem {
 							}
 						}
 
-						if (tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")) {
+						if (tradeSettlementName.equals("SpecifiedTradeSettlementMonetarySummation")
+								|| tradeSettlementName.equals("SpecifiedTradeSettlementLineMonetarySummation")) {
 							NodeList totalChilds = tradeSettlementChilds.item(tradeSettlementChildIndex)
 								.getChildNodes();
 							for (int totalChildIndex = 0; totalChildIndex < totalChilds
@@ -259,6 +259,7 @@ public class Item implements IZUGFeRDExportableItem {
 		setPrice(prc);
 		setQuantity(qty);
 		setBasisQuantity(new BigDecimal(basisQuantity));
+		setLineTotalAmount(new BigDecimal(lineTotal));
 		if (rdocs != null) {
 			for (ReferencedDocument rdoc : rdocs) {
 				addReferencedDocument(rdoc);
