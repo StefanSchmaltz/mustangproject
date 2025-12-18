@@ -1,14 +1,17 @@
 package org.mustangproject.validator;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -19,21 +22,18 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.mustangproject.ZUGFeRD.ZUGFeRDImporter;
-import org.riversun.bigdoc.bin.BigFileSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.verapdf.core.VeraPDFException;
 import org.verapdf.features.FeatureExtractorConfig;
 import org.verapdf.features.FeatureFactory;
+import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.metadata.fixer.FixerFactory;
 import org.verapdf.metadata.fixer.MetadataFixerConfig;
-import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.pdfa.flavours.PDFAFlavour;
 import org.verapdf.pdfa.validation.validators.ValidatorConfig;
 import org.verapdf.pdfa.validation.validators.ValidatorFactory;
-import org.verapdf.processor.BatchProcessor;
-import org.verapdf.processor.FormatOption;
 import org.verapdf.processor.ItemProcessor;
 import org.verapdf.processor.ProcessorConfig;
 import org.verapdf.processor.ProcessorFactory;
@@ -110,20 +110,18 @@ public class PDFValidator extends Validator {
 			// Generating list of files for processing
 			// starting the processor
 			ItemDetails itemDetails = ItemDetails.fromValues(pdfFilename);
-			inputStream.mark(Integer.MAX_VALUE);
 			processorResult = processor.process(itemDetails, inputStream);
 			pdfReport = processorResult.getValidationResult().toString().replaceAll(
 				"<\\?xml version=\"1\\.0\" encoding=\"utf-8\"\\?>",
 				""
 			);
-			inputStream.reset();
 		} catch (final Exception excep) {
 			context.addResultItem(new ValidationResultItem(ESeverity.exception, excep.getMessage()).setSection(7)
 				.setPart(EPart.pdf).setStacktrace(excep.getStackTrace().toString()));
 		}
 
 		// step 2 validate XMP
-		final ZUGFeRDImporter zi = new ZUGFeRDImporter(inputStream);
+		final ZUGFeRDImporter zi = new ZUGFeRDImporter(new RandomAccessReadBuffer(fileContents));
 		final String xmp = zi.getXMP();
 
 		final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();

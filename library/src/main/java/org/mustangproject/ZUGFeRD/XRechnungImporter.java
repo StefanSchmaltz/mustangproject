@@ -1,18 +1,22 @@
 package org.mustangproject.ZUGFeRD;
 
-import org.mustangproject.XMLTools;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+
 public class XRechnungImporter extends ZUGFeRDImporter {
 
 	public XRechnungImporter(byte[] rawXml) {
+		this(new RandomAccessReadBuffer(rawXml));
+	}
+
+	public XRechnungImporter(RandomAccessRead rawXml) {
 		super();
 
 		try {
@@ -28,7 +32,7 @@ public class XRechnungImporter extends ZUGFeRDImporter {
 		super();
 
 		try {
-			setRawXML(Files.readAllBytes(Paths.get(filename)));
+			setRawXML(new RandomAccessReadBufferedFile(Paths.get(filename)));
 			containsMeta = true;
 		} catch (final IOException e) {
 			Logger.getLogger(ZUGFeRDImporter.class.getName()).log(Level.SEVERE, null, e);
@@ -40,7 +44,7 @@ public class XRechnungImporter extends ZUGFeRDImporter {
 		super();
 
 		try {
-			setRawXML(XMLTools.getBytesFromStream(fileinput));
+			setRawXML(new RandomAccessReadBuffer(fileinput));
 			containsMeta = true;
 		} catch (final IOException e) {
 			Logger.getLogger(ZUGFeRDImporter.class.getName()).log(Level.SEVERE, null, e);

@@ -18,9 +18,19 @@
  *********************************************************************** */
 package org.mustangproject.ZUGFeRD;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.xmpbox.XMPMetadata;
@@ -29,16 +39,8 @@ import org.apache.xmpbox.xml.DomXmpParser;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class MustangReaderWriterEdgeTest extends MustangReaderTestCase {
@@ -190,11 +192,12 @@ public class MustangReaderWriterEdgeTest extends MustangReaderTestCase {
 	 * The importer test imports from ./src/test/MustangGnuaccountingBeispielRE-20170509_505.pdf to check the values.
 	 * As only Name Ascending is supported for Test Unit sequence, I renamed the this test-A-Import to run before
 	 * testZExport
+	 * @throws IOException 
 	 */
 
-	public void testAImport() {
-		InputStream inputStream = this.getClass().getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505.pdf");
-		ZUGFeRDImporter zi = new ZUGFeRDImporter(inputStream);
+	public void testAImport() throws IOException {
+		RandomAccessRead rpdf = new RandomAccessReadBuffer(this.getClass().getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505.pdf"));
+		ZUGFeRDImporter zi = new ZUGFeRDImporter(rpdf);
 
 		// Reading ZUGFeRD
 		assertEquals(zi.getAmount(), "571.04");
@@ -252,7 +255,7 @@ public class MustangReaderWriterEdgeTest extends MustangReaderTestCase {
 		setupPdfUnderTest(SOURCE_PDF, TARGET_PDF);
 
 		// now check the contents
-		PDDocument doc = PDDocument.load(new File(TARGET_PDF));
+		PDDocument doc = Loader.loadPDF(new File(TARGET_PDF));
 		PDMetadata meta = doc.getDocumentCatalog().getMetadata();
 		assertNotNull("The pdf must contain XMPMetadata", meta);
 
@@ -262,7 +265,7 @@ public class MustangReaderWriterEdgeTest extends MustangReaderTestCase {
 		DomXmpParser xmpParser = new DomXmpParser();
 		XMPMetadata xmp = xmpParser.parse(xmpBytes);
 
-		PDFAIdentificationSchema pdfai = xmp.getPDFIdentificationSchema();
+		PDFAIdentificationSchema pdfai = xmp.getPDFAIdentificationSchema();
 		assertNotNull("The pdf must contain a PDFIdentificationSchema", pdfai);
 
 		assertTrue("The PDF/A conformance must be A, B or U",
@@ -272,12 +275,12 @@ public class MustangReaderWriterEdgeTest extends MustangReaderTestCase {
 	}
 
 	private void setupPdfUnderTest(String sourcePath, String targetPath) {
-		try (InputStream inputStream = this.getClass().getResourceAsStream(sourcePath)) {
+		try (RandomAccessRead rpdf = new RandomAccessReadBuffer(this.getClass().getResourceAsStream(sourcePath))) {
 			ZUGFeRDExporterFromA3 ze = new ZUGFeRDExporterFromA3()
 					 .setProducer("My Application")
 					 .setCreator(System.getProperty("user.name"))
 				 	 .setZUGFeRDVersion(1)
-					 .load(inputStream);
+					 .load(rpdf);
 			ze.setTransaction(this);
 			String theXML = new String(ze.getProvider().getXML(), StandardCharsets.UTF_8);
 			assertTrue(theXML.contains("<rsm:CrossIndustryDocument"));

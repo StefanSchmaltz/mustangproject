@@ -23,8 +23,6 @@ package org.mustangproject.ZUGFeRD;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +33,7 @@ import java.util.Date;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -112,9 +111,9 @@ public class UBLTest extends ResourceCase {
 		ZUGFeRDInvoiceImporter zii = null;
 		Invoice invoice = null;
 		try {
-			zii = new ZUGFeRDInvoiceImporter(new FileInputStream(UBLinputFile));
+			zii = new ZUGFeRDInvoiceImporter(new RandomAccessReadBufferedFile(UBLinputFile));
 			invoice = zii.extractInvoice();
-		} catch (XPathExpressionException | ParseException | FileNotFoundException e) {
+		} catch (XPathExpressionException | ParseException | IOException e) {
 			hasExceptions = true;
 			e.printStackTrace();
 		}

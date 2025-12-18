@@ -21,16 +21,7 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
-import org.mustangproject.*;
-
-import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -40,6 +31,20 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+
+import javax.xml.xpath.XPathExpressionException;
+
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
+import org.mustangproject.BankDetails;
+import org.mustangproject.Contact;
+import org.mustangproject.Invoice;
+import org.mustangproject.TradeParty;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class OXTest extends MustangReaderTestCase implements IExportableTransaction {
@@ -268,8 +273,8 @@ public class OXTest extends MustangReaderTestCase implements IExportableTransact
 
 		// the writing part
 
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 OXExporterFromA1 oe = new OXExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(1).ignorePDFAErrors()
@@ -319,8 +324,8 @@ public class OXTest extends MustangReaderTestCase implements IExportableTransact
 
 		// the writing part
 
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 OXExporterFromA1 oe = new OXExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(1).ignorePDFAErrors()

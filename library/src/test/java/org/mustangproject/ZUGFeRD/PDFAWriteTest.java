@@ -21,15 +21,20 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
-import org.mustangproject.*;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Date;
+
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
+import org.mustangproject.BankDetails;
+import org.mustangproject.Contact;
+import org.mustangproject.Invoice;
+import org.mustangproject.Item;
+import org.mustangproject.Product;
+import org.mustangproject.TradeParty;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -101,14 +106,13 @@ public class PDFAWriteTest extends ResourceCase {
 		Invoice i = createInvoice(recipient);
 		File tempFile = getResourceAsFile("MustangGnuaccountingBeispielRE-20201121_508blanko.pdf");
 		int exceptions=0;
-		try {
-			FileInputStream fis=new FileInputStream(tempFile);
+		try (RandomAccessReadBufferedFile fis=new RandomAccessReadBufferedFile(tempFile)){
 			IZUGFeRDExporter zea3 = new  ZUGFeRDExporterFromPDFA().load(fis);
 			zea3.setTransaction(i);
 			zea3.setProfile(Profiles.getByName("EN16931"));
 			zea3.export(TARGET_PDF_FROM_A1_UNKNOWN);
 
-		} catch (IOException e) {
+		} catch (Throwable e) {
 			exceptions++;
 		}
 		assertTrue(exceptions==0);

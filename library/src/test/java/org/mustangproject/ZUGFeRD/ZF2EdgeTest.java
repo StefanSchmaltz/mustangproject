@@ -21,7 +21,6 @@ package org.mustangproject.ZUGFeRD;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -30,6 +29,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 
@@ -293,8 +294,8 @@ public class ZF2EdgeTest extends MustangReaderTestCase implements IExportableTra
 
 		// the writing part
 
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("Extended")).ignorePDFAErrors()
@@ -344,8 +345,8 @@ public class ZF2EdgeTest extends MustangReaderTestCase implements IExportableTra
 		// the writing part
 
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDFA3.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDFA3.pdf"));
 
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA3().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).disableFacturX()

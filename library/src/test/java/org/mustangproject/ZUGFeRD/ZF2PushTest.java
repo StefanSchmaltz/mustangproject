@@ -21,30 +21,34 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import java.io.ByteArrayInputStream;
+import static org.xmlunit.assertj.XmlAssert.assertThat;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
-
-import org.mustangproject.*;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
-
-import junit.framework.TestCase;
-
-import org.mustangproject.ZUGFeRD.model.EventTimeCodeTypeConstants;
-import org.xmlunit.builder.Input;
-import org.xmlunit.xpath.JAXPXPathEngine;
-import org.xmlunit.xpath.XPathEngine;
 
 import javax.xml.xpath.XPathExpressionException;
 
-import static org.xmlunit.assertj.XmlAssert.assertThat;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.junit.FixMethodOrder;
+import org.junit.runners.MethodSorters;
+import org.mustangproject.Allowance;
+import org.mustangproject.BankDetails;
+import org.mustangproject.CashDiscount;
+import org.mustangproject.Charge;
+import org.mustangproject.Contact;
+import org.mustangproject.Invoice;
+import org.mustangproject.Item;
+import org.mustangproject.Product;
+import org.mustangproject.SchemedID;
+import org.mustangproject.TradeParty;
+import org.mustangproject.ZUGFeRD.model.EventTimeCodeTypeConstants;
+
+import junit.framework.TestCase;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -72,8 +76,8 @@ public class ZF2PushTest extends TestCase {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
 		BigDecimal price = new BigDecimal(priceStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20201121_508blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20201121_508blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
@@ -125,8 +129,8 @@ public class ZF2PushTest extends TestCase {
 		String priceStr = "1.00";
 		String taxID = "9990815";
 		BigDecimal price = new BigDecimal(priceStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 				 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
@@ -170,8 +174,8 @@ public class ZF2PushTest extends TestCase {
 		String priceStr = "1.00";
 		String taxID = "9990815";
 		BigDecimal price = new BigDecimal(priceStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 				 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
@@ -185,7 +189,7 @@ public class ZF2PushTest extends TestCase {
 			);
 			String theXML = new String(ze.getProvider().getXML());
 			Invoice read=new Invoice();
-			ZUGFeRDInvoiceImporter zii=new ZUGFeRDInvoiceImporter(new ByteArrayInputStream(theXML.getBytes(StandardCharsets.UTF_8)));
+			ZUGFeRDInvoiceImporter zii=new ZUGFeRDInvoiceImporter(new RandomAccessReadBuffer(theXML.getBytes(StandardCharsets.UTF_8)));
 			zii.extractInto(read);
 			assertTrue(theXML.contains("<rsm:CrossIndustryInvoice"));
 
@@ -208,8 +212,8 @@ public class ZF2PushTest extends TestCase {
 		String number = "123";
 		String amountStr = "3.00";
 		BigDecimal amount = new BigDecimal(amountStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile("extended").ignorePDFAErrors()
@@ -259,8 +263,8 @@ public class ZF2PushTest extends TestCase {
 		String number = "123";
 		String amountStr = "3.00";
 		BigDecimal amount = new BigDecimal(amountStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile("extended").ignorePDFAErrors()
@@ -312,8 +316,8 @@ public class ZF2PushTest extends TestCase {
 		String number = "123";
 		String amountStr = "3.00";
 		BigDecimal amount = new BigDecimal(amountStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile("extended").ignorePDFAErrors()
@@ -360,8 +364,8 @@ public class ZF2PushTest extends TestCase {
 		String number = "123";
 		String amountStr = "3.00";
 		BigDecimal amount = new BigDecimal(amountStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("en16931")).ignorePDFAErrors()
@@ -413,8 +417,8 @@ public class ZF2PushTest extends TestCase {
 		String priceStr = "1.00";
 		String taxID = "9990815";
 		BigDecimal price = new BigDecimal(priceStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("extended")).ignorePDFAErrors()
@@ -504,8 +508,8 @@ public class ZF2PushTest extends TestCase {
 		String orgname = "Test company";
 		String number = "123";
 		BigDecimal qty = new BigDecimal("20");
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("en16931")).ignorePDFAErrors()
@@ -547,8 +551,8 @@ public class ZF2PushTest extends TestCase {
 		String number = "123";
 		String priceStr = "3.00";
 		BigDecimal price = new BigDecimal(priceStr);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile(Profiles.getByName("extended")).ignorePDFAErrors()
@@ -599,8 +603,8 @@ public class ZF2PushTest extends TestCase {
 		String priceStr = "1.00";
 		BigDecimal price = new BigDecimal(priceStr);
 		BigDecimal qty = new BigDecimal(-1.0);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
@@ -649,8 +653,8 @@ public class ZF2PushTest extends TestCase {
 		String priceStr = "1.00";
 		BigDecimal price = new BigDecimal(priceStr);
 		BigDecimal qty = new BigDecimal(1.0);
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setProducer("My Application")
 					 .setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).ignorePDFAErrors()
