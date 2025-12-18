@@ -18,10 +18,10 @@
  *********************************************************************** */
 package org.mustangproject.ZUGFeRD;
 
-import javax.activation.DataSource;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
+
+import org.apache.pdfbox.io.RandomAccessRead;
 
 public interface IZUGFeRDExporter extends Closeable, IExporter  {
 	/**
@@ -51,12 +51,12 @@ public interface IZUGFeRDExporter extends Closeable, IExporter  {
 	 * @throws IOException if anything is wrong with inputstream
 	 * @return the generated ZUGFeRDExporter
 	 */
-	public IZUGFeRDExporter load(InputStream pdfSource) throws IOException;
+	public IZUGFeRDExporter load(RandomAccessRead pdfSource) throws IOException;
 	public IZUGFeRDExporter setCreator(String creator);
 	public IZUGFeRDExporter setConformanceLevel(PDFAConformanceLevel newLevel);
 	public IZUGFeRDExporter setProducer(String producer);
 	public IZUGFeRDExporter setZUGFeRDVersion(int version);
-	public boolean ensurePDFIsValid(final DataSource dataSource) throws IOException;
+	public boolean ensurePDFIsValid(final RandomAccessRead dataSource) throws IOException;
 	public IZUGFeRDExporter setXML(byte[] zugferdData) throws IOException;
 	public IZUGFeRDExporter disableFacturX();
 	public IZUGFeRDExporter setProfile(Profile zugferdConformanceLevel);

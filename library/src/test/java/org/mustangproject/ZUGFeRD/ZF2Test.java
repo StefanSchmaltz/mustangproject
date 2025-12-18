@@ -20,7 +20,6 @@
 package org.mustangproject.ZUGFeRD;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -28,11 +27,13 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
+
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ZF2Test extends MustangReaderTestCase {
@@ -165,8 +166,8 @@ public class ZF2Test extends MustangReaderTestCase {
 
 		// the writing part
 
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDFA3.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDFA3.pdf"));
 
 			 ZUGFeRDExporterFromA3 ze = new ZUGFeRDExporterFromA3().setProducer("My Application")
 						.setCreator(System.getProperty("user.name")).setZUGFeRDVersion(2).setProfile("EN16931")

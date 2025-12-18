@@ -20,16 +20,20 @@
  */
 package org.mustangproject.ZUGFeRD;
 
-import junit.framework.TestCase;
-import org.mustangproject.*;
-
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
+
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.mustangproject.BankDetails;
+import org.mustangproject.Invoice;
+import org.mustangproject.Item;
+import org.mustangproject.LegalOrganisation;
+import org.mustangproject.Product;
+import org.mustangproject.TradeParty;
+
+import junit.framework.TestCase;
 
 /***
  * This is a test to confirm the minimum steps to implement a interface are still sufficient
@@ -48,8 +52,8 @@ public class ProfilesMinimumBasicWLTest extends TestCase {
 		String ownOrgName = "ME";
 
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf"));
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setZUGFeRDVersion(2).setProfile("Minimum").load(SOURCE_PDF)) {
 			/***
 			 * this is a classical example of a french invoice (very low profile, siret number) and an attempt to answer stackoverflow (!)
@@ -102,8 +106,8 @@ public class ProfilesMinimumBasicWLTest extends TestCase {
 		String ownOrgName = "ME";
 
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf"));
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setZUGFeRDVersion(2).setProfile("Minimum").load(SOURCE_PDF)) {
 			/***
 			 * this is a classical example of a french invoice (very low profile, siret number) and an attempt to answer stackoverflow (!)

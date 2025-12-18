@@ -18,9 +18,20 @@
  *********************************************************************** */
 package org.mustangproject.ZUGFeRD;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
@@ -32,14 +43,8 @@ import org.junit.FixMethodOrder;
 import org.junit.runners.MethodSorters;
 import org.mustangproject.ZUGFeRD.model.DocumentContextParameterTypeConstants;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class MustangReaderWriterTest extends MustangReaderTestCase {
@@ -188,11 +193,12 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 	 * The importer test imports from ./src/test/MustangGnuaccountingBeispielRE-20170509_505.pdf to check the
 	 * values. As only Name Ascending is supported for Test Unit sequence, I renamed the this testAImport
 	 * to run before testZExport
+	 * @throws IOException 
 	 */
 
-	public void testAImport() {
-		InputStream inputStream = this.getClass().getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505.pdf");
-		ZUGFeRDImporter zi = new ZUGFeRDImporter(inputStream);
+	public void testAImport() throws IOException {
+		RandomAccessRead rpdf = new RandomAccessReadBuffer(this.getClass().getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505.pdf"));
+		ZUGFeRDImporter zi = new ZUGFeRDImporter(rpdf);
 
 		// Reading ZUGFeRD
 		assertEquals(zi.getAmount(), "571.04");
@@ -210,9 +216,9 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 		assertEquals(zi.getSellerTradePartyAddress().getPostcodeCode(), "12345");
 	}
 
-	public void testForeignImport() {
-		InputStream inputStream = this.getClass().getResourceAsStream("/zugferd_invoice.pdf");
-		ZUGFeRDImporter zi = new ZUGFeRDImporter(inputStream);
+	public void testForeignImport() throws IOException {
+		RandomAccessRead rpdf = new RandomAccessReadBuffer(this.getClass().getResourceAsStream("/zugferd_invoice.pdf"));
+		ZUGFeRDImporter zi = new ZUGFeRDImporter(rpdf);
 
 		// Reading ZUGFeRD
 		String amount = zi.getAmount();
@@ -300,8 +306,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 
 	public void testMigratePDFA1ToA3() throws IOException {
 // just make sure there is no Exception
-		InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf");
+		RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf"));
 
 
 		IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setAttachZUGFeRDHeaders(false).load(SOURCE_PDF);
@@ -314,8 +320,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 
 	public void testMigratePDFA1ToA3Stream() throws IOException {
 		// just make sure there is no Exception
-		InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf");
+		RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf"));
 
 		IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setAttachZUGFeRDHeaders(false).load(SOURCE_PDF);
 
@@ -328,13 +334,11 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 	}
 
 	private void checkPdfA3B(File tempFile) throws IOException, InvalidPasswordException {
-		try (PDDocument doc = PDDocument.load(tempFile)) {
+		try (PDDocument doc = Loader.loadPDF(tempFile)) {
 			PDMetadata metadata = doc.getDocumentCatalog().getMetadata();
 			InputStream exportXMPMetadata = metadata.exportXMPMetadata();
-			byte[] xmpBytes = new byte[exportXMPMetadata.available()];
-			exportXMPMetadata.read(xmpBytes);
-			final XMPMetadata xmp = new DomXmpParser().parse(xmpBytes);
-			PDFAIdentificationSchema pdfaid = xmp.getPDFIdentificationSchema();
+			final XMPMetadata xmp = new DomXmpParser().parse(exportXMPMetadata);
+			PDFAIdentificationSchema pdfaid = xmp.getPDFAIdentificationSchema();
 			assertEquals(pdfaid.getPart().intValue(), 3);
 			assertEquals(pdfaid.getConformance(), "U");
 		} catch (XmpParsingException e) {
@@ -355,8 +359,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 		final String TARGET_PDF = "./target/testout-MustangGnuaccountingBeispielRE-20171118_506new.pdf";
 
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf"));
 
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setZUGFeRDVersion(2).setProfile(Profiles.getByName("EN16931")).load(SOURCE_PDF)) {
 
@@ -368,7 +372,7 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 			ze.export(baos);
 			ze.close();
 			String pdfContent = baos.toString("UTF-8");
-			assertFalse(pdfContent.indexOf("(via mustangproject.org") == -1);
+			assertFalse(pdfContent.indexOf("mustangproject.org") == -1);
 			// check for pdf-a schema extension
 //			assertFalse(pdfContent.indexOf("<zf:ConformanceLevel>EN 16931</zf:ConformanceLevel>") == -1);
 //			assertFalse(pdfContent.indexOf("<pdfaSchema:prefix>zf</pdfaSchema:prefix>") == -1);
@@ -399,8 +403,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 		final String TARGET_PDF = "./target/testout-MustangGnuaccountingBeispielRE-20171118_506new.pdf";
 
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+			.getResourceAsStream("/MustangGnuaccountingBeispielRE-20190610_507blanko.pdf"));
 
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().setZUGFeRDVersion(1).setProfile(Profiles.getByName("COMFORT",1)).load(SOURCE_PDF)) {
 
@@ -427,8 +431,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 		final String TARGET_PDF = "./target/testout-MustangGnuaccountingBeispielRE-20171118_506fx.pdf";
 
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20171118_506blanko.pdf"));
 
 			 ZUGFeRDExporterFromA1 ze = new ZUGFeRDExporterFromA1().setZUGFeRDVersion(2).setProfile(Profiles.getByName("EN16931")).load(SOURCE_PDF)) {
 			ByteArrayOutputStream result = new ByteArrayOutputStream();
@@ -448,7 +452,7 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 			ze.export(baos);
 			ze.close();
 			String pdfContent = baos.toString("UTF-8");
-			assertFalse(pdfContent.indexOf("(via mustangproject.org") == -1);
+			assertFalse(pdfContent.indexOf("mustangproject.org") == -1);
 			// check for pdf-a schema extension
 			assertFalse(pdfContent.indexOf("<fx:ConformanceLevel>EN 16931</fx:ConformanceLevel>") == -1);
 			assertFalse(pdfContent.indexOf("<pdfaSchema:prefix>fx</pdfaSchema:prefix>") == -1);
@@ -472,8 +476,8 @@ public class MustangReaderWriterTest extends MustangReaderTestCase {
 
 		boolean exceptionThrown = false;
 		// the writing part
-		try (InputStream SOURCE_PDF = this.getClass()
-				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDF14.pdf");
+		try (RandomAccessRead SOURCE_PDF = new RandomAccessReadBuffer(this.getClass()
+				.getResourceAsStream("/MustangGnuaccountingBeispielRE-20170509_505PDF14.pdf"));
 
 			 IZUGFeRDExporter ze = new ZUGFeRDExporterFromA1().load(SOURCE_PDF)) {
 

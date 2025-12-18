@@ -18,21 +18,49 @@
  *********************************************************************** */
 package org.mustangproject.commandline;
 
-import org.apache.commons.cli.*;
-import org.mustangproject.CII.CIIToUBL;
-import org.mustangproject.EStandard;
-import org.mustangproject.FileAttachment;
-import org.mustangproject.ZUGFeRD.*;
-import org.mustangproject.validator.ZUGFeRDValidator;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.transform.TransformerException;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+
+import javax.xml.transform.TransformerException;
+
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.UnrecognizedOptionException;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessInputStream;
+import org.apache.pdfbox.io.RandomAccessRead;
+import org.mustangproject.EStandard;
+import org.mustangproject.FileAttachment;
+import org.mustangproject.CII.CIIToUBL;
+import org.mustangproject.ZUGFeRD.DXExporterFromA1;
+import org.mustangproject.ZUGFeRD.IZUGFeRDExporter;
+import org.mustangproject.ZUGFeRD.OXExporterFromA1;
+import org.mustangproject.ZUGFeRD.Profile;
+import org.mustangproject.ZUGFeRD.Profiles;
+import org.mustangproject.ZUGFeRD.XMLUpgrader;
+import org.mustangproject.ZUGFeRD.ZUGFeRDExporterFromA1;
+import org.mustangproject.ZUGFeRD.ZUGFeRDExporterFromA3;
+import org.mustangproject.ZUGFeRD.ZUGFeRDExporterFromPDFA;
+import org.mustangproject.ZUGFeRD.ZUGFeRDImporter;
+import org.mustangproject.ZUGFeRD.ZUGFeRDVisualizer;
+import org.mustangproject.validator.ZUGFeRDValidator;
+import org.slf4j.LoggerFactory;
 
 public class Main {
 	private static org.slf4j.Logger LOGGER; // log output
@@ -535,12 +563,12 @@ public class Main {
 
 		// All params are good! continue...
 		ZUGFeRDImporter zi = new ZUGFeRDImporter(pdfName);
-		byte[] XMLContent = zi.getRawXML();
-		if (XMLContent == null) {
+		RandomAccessRead xml = zi.getRawXML();
+		if (xml == null) {
 			System.err.println("No ZUGFeRD XML found in PDF file");
 
 		} else {
-			Files.write(Paths.get(xmlName), XMLContent);
+			Files.write(Paths.get(xmlName), IOUtils.toByteArray(new RandomAccessInputStream(xml)));
 			System.out.println("Written to " + xmlName);
 		}
 	}
